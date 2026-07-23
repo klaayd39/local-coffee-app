@@ -44,31 +44,65 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const lastSpokenTextRef = useRef('');
+  const isSimulatingRef = useRef(false);
+
+  useEffect(() => {
+    isSimulatingRef.current = isSimulating;
+  }, [isSimulating]);
 
   // Initialize Geolocation Tracking
   useEffect(() => {
     let watchId;
     if (navigator.geolocation) {
-      // Request high accuracy real-time position updates
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
+      const handlePosition = (pos) => {
+        if (!isSimulatingRef.current) {
           setUserLoc({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
             name: "Your Location"
           });
+        }
+      };
+
+      const handleFallback = () => {
+        navigator.geolocation.getCurrentPosition(
+          handlePosition,
+          (err) => console.warn('Fallback geolocation error:', err),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+      };
+
+      // Get initial position quickly
+      navigator.geolocation.getCurrentPosition(
+        handlePosition,
+        (err) => {
+          console.warn('Initial high-accuracy geolocation error:', err);
+          handleFallback();
         },
-        (err) => console.warn('Geolocation error:', err),
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+      );
+
+      // Request high accuracy real-time position updates
+      watchId = navigator.geolocation.watchPosition(
+        handlePosition,
+        (err) => {
+          console.warn('Geolocation watch error:', err);
+          if (err.code === 3 || err.code === 2) {
+             handleFallback();
+          }
+        },
         {
           enableHighAccuracy: true,
-          maximumAge: 0,
-          timeout: 15000
+          maximumAge: 1000,
+          timeout: 10000
         }
       );
     }
     return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId);
+      if (watchId !== undefined && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
     };
   }, []);
 
@@ -229,6 +263,31 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   const handleLocateMe = () => {
     setMapBounds(null);
     setLocateTrigger(prev => prev + 1);
+
+    if (navigator.geolocation) {
+      const handlePos = (pos) => {
+        const loc = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          name: "Your Location"
+        };
+        setUserLoc(loc);
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        handlePos,
+        (err) => {
+          console.warn('High-accuracy locate me error, falling back:', err);
+          navigator.geolocation.getCurrentPosition(
+            handlePos,
+            (err2) => console.warn('Fallback locate me error:', err2),
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+      );
+    }
   };
 
   const handleStartNavigation = () => {

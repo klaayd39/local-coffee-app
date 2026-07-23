@@ -408,20 +408,18 @@ body {
   color: var(--pine);
 }
 
-@media (prefers-color-scheme: dark) {
-  .bottom-nav {
-    background: rgba(28, 28, 30, 0.85);
-    border-top: 0.5px solid rgba(255, 255, 255, 0.15);
-  }
-  .nav-btn {
-    color: #8E8E93;
-  }
-  .nav-btn:hover {
-    color: #AEAEB2;
-  }
-  .nav-btn.active {
-    color: var(--amber);
-  }
+[data-theme="dark"] .bottom-nav {
+  background: rgba(28, 28, 30, 0.85);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.15);
+}
+[data-theme="dark"] .nav-btn {
+  color: #8E8E93;
+}
+[data-theme="dark"] .nav-btn:hover {
+  color: #AEAEB2;
+}
+[data-theme="dark"] .nav-btn.active {
+  color: var(--amber);
 }
 
 /* ── MAP VIEW ── */

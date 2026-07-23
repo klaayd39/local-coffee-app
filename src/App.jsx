@@ -340,6 +340,8 @@ export default function App() {
           toggleFilter={toggleFilter}
           selected={selected}
           toast={toast}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         >
           {mainContent}
         </DesktopAppShell>

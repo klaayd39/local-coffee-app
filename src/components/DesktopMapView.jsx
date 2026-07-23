@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapPin, Navigation, ChevronRight, X, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { MapPin, Navigation, ChevronRight, X, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink, LocateFixed } from 'lucide-react';
 
 export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   const mapContainerRef = useRef(null);
@@ -20,23 +20,61 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
 
   const lastSpokenTextRef = useRef('');
 
+  const isSimulatingRef = useRef(false);
+
+  useEffect(() => {
+    isSimulatingRef.current = isSimulating;
+  }, [isSimulating]);
+
   // Initialize Geolocation Tracking
   useEffect(() => {
     let watchId;
     if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
+      const handlePosition = (pos) => {
+        if (!isSimulatingRef.current) {
           setUserLoc({
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
             accuracy: pos.coords.accuracy,
             name: "Your Location"
           });
+        }
+      };
+
+      const handleFallback = () => {
+        navigator.geolocation.getCurrentPosition(
+          handlePosition,
+          (err) => console.warn('Desktop fallback geolocation error:', err),
+          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+        );
+      };
+
+      // Get initial position quickly
+      navigator.geolocation.getCurrentPosition(
+        handlePosition,
+        (err) => {
+          console.warn('Desktop initial high-accuracy geolocation error:', err);
+          handleFallback();
         },
-        (err) => console.warn('Desktop Geolocation error:', err),
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+      );
+
+      watchId = navigator.geolocation.watchPosition(
+        handlePosition,
+        (err) => {
+          console.warn('Desktop Geolocation watch error:', err);
+          if (err.code === 3 || err.code === 2) {
+            handleFallback();
+          }
+        },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
       );
     }
+    return () => {
+      if (watchId !== undefined && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, []);
 
   // Geolocation math helpers
@@ -215,11 +253,26 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
 
   // Update user marker position on Leaflet instance and pan map
   useEffect(() => {
-    if (userMarkerRef.current && mapInstanceRef.current) {
+    if (!mapInstanceRef.current || !window.L) return;
+
+    if (!userMarkerRef.current) {
+      const userIcon = window.L.divIcon({
+        className: 'user-location-pin',
+        html: `
+          <div style="width: 22px; height: 22px; background: #2563eb; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 12px rgba(37,99,235,0.6); position: relative;">
+            <div style="position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #2563eb; animation: pulse-ring 1.5s infinite;"></div>
+          </div>
+        `,
+        iconSize: [22, 22],
+        iconAnchor: [11, 11]
+      });
+      userMarkerRef.current = window.L.marker([userLoc.lat, userLoc.lng], { icon: userIcon }).addTo(mapInstanceRef.current);
+    } else {
       userMarkerRef.current.setLatLng([userLoc.lat, userLoc.lng]);
-      if (isNavigating) {
-        mapInstanceRef.current.setView([userLoc.lat, userLoc.lng], 18, { animate: true, duration: 0.5 });
-      }
+    }
+
+    if (isNavigating) {
+      mapInstanceRef.current.setView([userLoc.lat, userLoc.lng], 18, { animate: true, duration: 0.5 });
     }
   }, [userLoc, isNavigating]);
 
@@ -260,25 +313,11 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
     if (!map || !window.L) return;
 
     if (polylineRef.current) polylineRef.current.remove();
-    if (userMarkerRef.current) userMarkerRef.current.remove();
 
     if (!cafe) {
       setActiveRoute(null);
       return;
     }
-
-    const userIcon = window.L.divIcon({
-      className: 'user-location-pin',
-      html: `
-        <div style="width: 22px; height: 22px; background: #2563eb; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 12px rgba(37,99,235,0.6); position: relative;">
-          <div style="position: absolute; inset: -6px; border-radius: 50%; border: 2px solid #2563eb; animation: pulse-ring 1.5s infinite;"></div>
-        </div>
-      `,
-      iconSize: [22, 22],
-      iconAnchor: [11, 11]
-    });
-
-    userMarkerRef.current = window.L.marker([userLoc.lat, userLoc.lng], { icon: userIcon }).addTo(map);
 
     let geometry = [];
     let distText = "";
@@ -415,10 +454,41 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       }
     } else if (!selectedId) {
       if (polylineRef.current) polylineRef.current.remove();
-      if (userMarkerRef.current) userMarkerRef.current.remove();
       setActiveRoute(null);
     }
   }, [cafes, selectedId]);
+
+  const handleLocateMe = () => {
+    if (navigator.geolocation) {
+      const handlePos = (pos) => {
+        const loc = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          name: "Your Location"
+        };
+        setUserLoc(loc);
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { animate: true, duration: 0.8 });
+        }
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        handlePos,
+        (err) => {
+          console.warn('Desktop high-accuracy locate me error, falling back:', err);
+          navigator.geolocation.getCurrentPosition(
+            handlePos,
+            (err2) => console.warn('Desktop fallback locate me error:', err2),
+            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+          );
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+      );
+    } else if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+    }
+  };
 
   return (
     <div className="desktop-map-layout">
@@ -427,9 +497,19 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
           <div ref={mapContainerRef} style={{ width: '100%', height: '100%', borderRadius: 'inherit' }} />
 
           {!isNavigating && (
-            <div className="map-label" style={{ zIndex: 500, pointerEvents: 'none' }}>
-              📍 Live In-App Navigation · Malaybalay City
-            </div>
+            <>
+              <div className="map-label" style={{ zIndex: 500, pointerEvents: 'none' }}>
+                📍 Live In-App Navigation · Malaybalay City
+              </div>
+              <button
+                className="locate-me-fab"
+                aria-label="Locate Me"
+                onClick={handleLocateMe}
+                style={{ zIndex: 500 }}
+              >
+                <LocateFixed size={20} />
+              </button>
+            </>
           )}
 
           {/* Navigation HUD Overlay */}
