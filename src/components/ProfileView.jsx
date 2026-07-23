@@ -88,6 +88,11 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
   const [activeTab, setActiveTab] = useState('checkins'); // checkins | saved | badges
   const [isFollowing, setIsFollowing] = useState(false);
 
+  // Touch Swipe Gesture References
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+  const TABS_ORDER = ['checkins', 'saved', 'badges'];
+
   // Sticky Header Logic
   const coverRef = useRef(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
@@ -253,22 +258,6 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
   const userPosts = POSTS.filter(p => p.user.id === propUser.id || p.user.name === currentUserData.name);
   const savedPosts = POSTS.filter(p => savedPostIds.includes(p.id));
 
-  if (loading) {
-    return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Loading Coffee Passport Profile...
-      </div>
-    );
-  }
-
-  const avatarImg = currentUserData.avatar_url || currentUserData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
-  const coverUrl = currentUserData.cover_url || localStorage.getItem('local_cover_url') || '';
-
-  // Touch Swipe Gesture Handling for Tabs (Mobile UX)
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const TABS_ORDER = ['checkins', 'saved', 'badges'];
-
   const handleTouchStart = (e) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
@@ -296,6 +285,17 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
     touchStartX.current = 0;
     touchEndX.current = 0;
   };
+
+  if (loading) {
+    return (
+      <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
+        Loading Coffee Passport Profile...
+      </div>
+    );
+  }
+
+  const avatarImg = currentUserData.avatar_url || currentUserData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
+  const coverUrl = currentUserData.cover_url || localStorage.getItem('local_cover_url') || '';
 
   return (
     <div className="profile-layout-container">
