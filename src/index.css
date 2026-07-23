@@ -5122,6 +5122,64 @@ body {
   background: rgba(0,0,0,0.6);
 }
 
+/* Profile Split Layout & UX Enhancements */
+.profile-split-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.profile-sidebar-panel {
+  width: 100%;
+}
+
+.profile-main-content-panel {
+  width: 100%;
+}
+
+.profile-tab-content-wrapper {
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  min-height: 240px;
+}
+
+@media (min-width: 900px) {
+  .profile-split-wrapper {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 28px;
+    align-items: start;
+    padding: 0 24px 32px;
+  }
+
+  .profile-sidebar-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding-bottom: 20px;
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 20px;
+  }
+
+  .profile-sidebar-panel .profile-info-section {
+    padding: 0 18px;
+  }
+
+  .profile-main-content-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .profile-main-content-panel .profile-tabs {
+    margin-top: 0;
+  }
+}
+
 /* User Info Section */
 .profile-info-section {
   padding: 0 20px;
