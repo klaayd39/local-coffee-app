@@ -88,11 +88,6 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
   const [activeTab, setActiveTab] = useState('checkins'); // checkins | saved | badges
   const [isFollowing, setIsFollowing] = useState(false);
 
-  // Touch Swipe Gesture References
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
-  const TABS_ORDER = ['checkins', 'saved', 'badges'];
-
   // Sticky Header Logic
   const coverRef = useRef(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
@@ -258,34 +253,6 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
   const userPosts = POSTS.filter(p => p.user.id === propUser.id || p.user.name === currentUserData.name);
   const savedPosts = POSTS.filter(p => savedPostIds.includes(p.id));
 
-  const handleTouchStart = (e) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchMove = (e) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const distance = touchStartX.current - touchEndX.current;
-    const minSwipeDistance = 50; // min px to trigger swipe
-
-    if (Math.abs(distance) > minSwipeDistance) {
-      const currentIndex = TABS_ORDER.indexOf(activeTab);
-      if (distance > 0 && currentIndex < TABS_ORDER.length - 1) {
-        // Swiped Left -> Move to Next Tab
-        setActiveTab(TABS_ORDER[currentIndex + 1]);
-      } else if (distance < 0 && currentIndex > 0) {
-        // Swiped Right -> Move to Previous Tab
-        setActiveTab(TABS_ORDER[currentIndex - 1]);
-      }
-    }
-    // Reset values
-    touchStartX.current = 0;
-    touchEndX.current = 0;
-  };
-
   if (loading) {
     return (
       <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
@@ -330,275 +297,260 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
           </div>
         </div>
 
-        {/* Profile Split Wrapper for Desktop vs Mobile */}
-        <div className="profile-split-wrapper">
-          {/* Left Panel: Sidebar on Desktop, Top Section on Mobile */}
-          <div className="profile-sidebar-panel">
-            <div className="profile-info-section">
-              <div className="profile-avatar-row">
-                <img
-                  src={avatarImg}
-                  alt={currentUserData.name}
-                  className="profile-avatar"
-                  onClick={() => {
-                    setEditForm({
-                      name: currentUserData.name || '',
-                      username: currentUserData.username || '',
-                      bio: currentUserData.bio || '',
-                      avatar_url: currentUserData.avatar_url || currentUserData.avatar || '',
-                      cover_url: currentUserData.cover_url || localStorage.getItem('local_cover_url') || ''
-                    });
-                    setShowAvatarModal(true);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                />
+        {/* Profile Info */}
+        <div className="profile-info-section">
+          <div className="profile-avatar-row">
+            <img
+              src={avatarImg}
+              alt={currentUserData.name}
+              className="profile-avatar"
+              onClick={() => {
+                setEditForm({
+                  name: currentUserData.name || '',
+                  username: currentUserData.username || '',
+                  bio: currentUserData.bio || '',
+                  avatar_url: currentUserData.avatar_url || currentUserData.avatar || '',
+                  cover_url: currentUserData.cover_url || localStorage.getItem('local_cover_url') || ''
+                });
+                setShowAvatarModal(true);
+              }}
+              style={{ cursor: 'pointer' }}
+            />
 
-                {!isMe ? (
-                  <button
-                    onClick={toggleFollow}
-                    className={`profile-action-btn ${isFollowing ? 'secondary' : 'primary'}`}
-                  >
-                    {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-                    {isFollowing ? 'Following' : 'Follow'}
-                  </button>
-                ) : (
-                  <div className="profile-level-container">
-                    <div className="profile-level-text">
-                      👑 {currentUserData.level || 'Bean Explorer'} <span style={{fontSize:'11px', color:'var(--text-muted)'}}>({currentUserData.points || 142} / 200 PTS)</span>
-                    </div>
-                    <div className="profile-level-bar-bg">
-                      <div className="profile-level-bar-fill" style={{ width: `${Math.min(100, ((currentUserData.points || 142) / 200) * 100)}%` }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <h2 className="profile-name">{currentUserData.name}</h2>
-                <div className="profile-username">@{currentUserData.username || 'coffeelover'}</div>
-                
-                {/* Bio Section */}
-                <div>
-                  <div className="profile-bio-container">
-                    <p className="profile-bio-text">
-                      {currentUserData.bio || 'Coffee enthusiast exploring local cafes ☕'}
-                    </p>
-                  </div>
+            {!isMe ? (
+              <button
+                onClick={toggleFollow}
+                className={`profile-action-btn ${isFollowing ? 'secondary' : 'primary'}`}
+              >
+                {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+                {isFollowing ? 'Following' : 'Follow'}
+              </button>
+            ) : (
+              <div className="profile-level-container">
+                <div className="profile-level-text">
+                  👑 {currentUserData.level || 'Bean Explorer'} <span style={{fontSize:'11px', color:'var(--text-muted)'}}>({currentUserData.points || 142} / 200 PTS)</span>
+                </div>
+                <div className="profile-level-bar-bg">
+                  <div className="profile-level-bar-fill" style={{ width: `${Math.min(100, ((currentUserData.points || 142) / 200) * 100)}%` }}></div>
                 </div>
               </div>
+            )}
+          </div>
 
-              {/* Quick Actions Bar */}
-              <div className="profile-quick-actions" role="region" aria-label="Quick Actions">
-                <button
-                  onClick={() => {
-                    setEditForm({
-                      name: currentUserData.name || '',
-                      username: currentUserData.username || '',
-                      bio: currentUserData.bio || '',
-                      avatar_url: currentUserData.avatar_url || currentUserData.avatar || '',
-                      cover_url: currentUserData.cover_url || localStorage.getItem('local_cover_url') || ''
-                    });
-                    setShowEditProfile(true);
-                  }}
-                  className="quick-action-btn primary-action"
-                  aria-label="Edit Profile"
-                >
-                  <Edit2 size={16} />
-                  <span>Edit Profile</span>
-                </button>
-
-                <button
-                  onClick={handleShareProfile}
-                  className="quick-action-btn"
-                  aria-label="Share Profile"
-                >
-                  <Share2 size={16} />
-                  <span>Share</span>
-                </button>
-
-                <button
-                  onClick={() => setShowQrModal(true)}
-                  className="quick-action-btn icon-only"
-                  title="Personal QR Code"
-                  aria-label="Show Personal QR Code"
-                >
-                  <QrCodeIcon size={18} />
-                </button>
-
-                <button
-                  onClick={() => setShowSettingsModal(true)}
-                  className="quick-action-btn icon-only"
-                  title="Settings"
-                  aria-label="Open Settings"
-                >
-                  <Settings size={18} />
-                </button>
-              </div>
-
-              {/* Feedback Toast */}
-              {shareToast && (
-                <div className="profile-toast-notification">
-                  <Check size={14} />
-                  <span>{shareToast}</span>
-                </div>
-              )}
-
-              {/* Coffee Journey Statistics Cards Grid */}
-              <div className="coffee-journey-stats-section" role="region" aria-label="Coffee Journey Statistics">
-                <div className="journey-stats-header">
-                  <h3 className="journey-stats-title">
-                    <Sparkles size={16} color="var(--amber)" />
-                    Coffee Journey Highlights
-                  </h3>
-                  <span className="journey-level-pill">
-                    {currentUserData.level || 'Bean Explorer'}
-                  </span>
-                </div>
-
-                <div className="coffee-stats-grid">
-                  <CoffeeStatCard
-                    icon={Coffee}
-                    value={userPosts.length || currentUserData.checkInsCount || 12}
-                    label="Check-ins"
-                    subtext="Total brews logged"
-                    accentColor="#8C5A3C"
-                    tooltip="Number of coffee check-ins posted to your profile"
-                  />
-
-                  <CoffeeStatCard
-                    icon={Stamp}
-                    value="16 / 42"
-                    label="Passport Completed"
-                    subtext="38% Stamped"
-                    progress={38}
-                    accentColor="#365C41"
-                    tooltip="Official stamps collected in your Coffee Passport"
-                  />
-
-                  <CoffeeStatCard
-                    icon={Heart}
-                    value="Spanish Latte"
-                    label="Favorite Drink"
-                    subtext="Most enjoyed brew"
-                    accentColor="#E11D48"
-                    tooltip="Your top-rated and most frequently logged coffee drink"
-                  />
-                </div>
+          <div>
+            <h2 className="profile-name">{currentUserData.name}</h2>
+            <div className="profile-username">@{currentUserData.username || 'coffeelover'}</div>
+            
+            {/* Bio Section */}
+            <div>
+              <div className="profile-bio-container">
+                <p className="profile-bio-text">
+                  {currentUserData.bio || 'Coffee enthusiast exploring local cafes ☕'}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Right Panel: Content Tabs & Feed on Desktop, Below on Mobile */}
-          <div className="profile-main-content-panel">
-            {/* Navigation Tabs */}
-            <div className="profile-tabs">
-              <button
-                onClick={() => setActiveTab('checkins')}
-                className={`profile-tab-btn ${activeTab === 'checkins' ? 'active' : ''}`}
-              >
-                <Grid size={16} /> Posts ({userPosts.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('saved')}
-                className={`profile-tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
-              >
-                <Bookmark size={16} /> Saved ({savedPosts.length})
-              </button>
-
-              <button
-                onClick={() => setActiveTab('badges')}
-                className={`profile-tab-btn ${activeTab === 'badges' ? 'active' : ''}`}
-              >
-                <Award size={16} /> Badges
-              </button>
-
-              <div 
-                className="profile-tab-indicator" 
-                style={{
-                  width: '33.33%',
-                  left: activeTab === 'checkins' ? '0%' : activeTab === 'saved' ? '33.33%' : '66.66%'
-                }}
-              ></div>
-            </div>
-
-            {/* Tab Content Area with Touch Swipe Support */}
-            <div 
-              className="profile-tab-content-wrapper"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
+          {/* Quick Actions Bar */}
+          <div className="profile-quick-actions" role="region" aria-label="Quick Actions">
+            <button
+              onClick={() => {
+                setEditForm({
+                  name: currentUserData.name || '',
+                  username: currentUserData.username || '',
+                  bio: currentUserData.bio || '',
+                  avatar_url: currentUserData.avatar_url || currentUserData.avatar || '',
+                  cover_url: currentUserData.cover_url || localStorage.getItem('local_cover_url') || ''
+                });
+                setShowEditProfile(true);
+              }}
+              className="quick-action-btn primary-action"
+              aria-label="Edit Profile"
             >
-              {activeTab === 'checkins' && (
-                userPosts.length > 0 ? (
-                  <div className="profile-grid">
-                    {userPosts.map(p => (
-                      <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
-                        <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
-                        <div className="profile-grid-overlay">
-                          <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
-                          <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="profile-empty-state">
-                    <Coffee size={48} strokeWidth={1.5} />
-                    <h4>No Posts Yet</h4>
-                    <p>Start sharing your coffee experiences! Check in at a café to create your first post.</p>
-                  </div>
-                )
-              )}
+              <Edit2 size={16} />
+              <span>Edit Profile</span>
+            </button>
 
-              {activeTab === 'saved' && (
-                savedPosts.length > 0 ? (
-                  <div className="profile-grid">
-                    {savedPosts.map(p => (
-                      <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
-                        <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
-                        <div className="profile-grid-overlay">
-                          <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
-                          <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="profile-empty-state">
-                    <Bookmark size={48} strokeWidth={1.5} />
-                    <h4>No Saved Posts</h4>
-                    <p>Bookmark posts you love to find them here later. Tap the save icon on any post!</p>
-                  </div>
-                )
-              )}
+            <button
+              onClick={handleShareProfile}
+              className="quick-action-btn"
+              aria-label="Share Profile"
+            >
+              <Share2 size={16} />
+              <span>Share</span>
+            </button>
 
-              {activeTab === 'badges' && (
-                BADGES.filter(b => b.unlocked).length > 0 ? (
-                  <div className="profile-badges-grid">
-                    {BADGES.map(b => (
-                      <div key={b.id} className={`profile-badge-card ${!b.unlocked ? 'locked' : ''}`}>
-                        <div className="badge-icon-wrapper">{b.icon}</div>
-                        <div>
-                          <div className="badge-card-title">
-                            {b.name}
-                            {b.unlocked && <CheckCircle size={12} color="#10b981" style={{marginLeft: '4px', verticalAlign: '-2px'}} />}
-                          </div>
-                          <div className="badge-card-desc">{b.description}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="profile-empty-state">
-                    <Award size={48} strokeWidth={1.5} />
-                    <h4>No Badges Earned</h4>
-                    <p>Complete challenges and milestones to unlock badges. Keep exploring cafés!</p>
-                  </div>
-                )
-              )}
+            <button
+              onClick={() => setShowQrModal(true)}
+              className="quick-action-btn icon-only"
+              title="Personal QR Code"
+              aria-label="Show Personal QR Code"
+            >
+              <QrCodeIcon size={18} />
+            </button>
+
+            <button
+              onClick={() => setShowSettingsModal(true)}
+              className="quick-action-btn icon-only"
+              title="Settings"
+              aria-label="Open Settings"
+            >
+              <Settings size={18} />
+            </button>
+          </div>
+
+          {/* Feedback Toast */}
+          {shareToast && (
+            <div className="profile-toast-notification">
+              <Check size={14} />
+              <span>{shareToast}</span>
+            </div>
+          )}
+
+          {/* Coffee Journey Statistics Cards Grid */}
+          <div className="coffee-journey-stats-section" role="region" aria-label="Coffee Journey Statistics">
+            <div className="journey-stats-header">
+              <h3 className="journey-stats-title">
+                <Sparkles size={16} color="var(--amber)" />
+                Coffee Journey Highlights
+              </h3>
+              <span className="journey-level-pill">
+                {currentUserData.level || 'Bean Explorer'}
+              </span>
+            </div>
+
+            <div className="coffee-stats-grid">
+              <CoffeeStatCard
+                icon={Coffee}
+                value={userPosts.length || currentUserData.checkInsCount || 12}
+                label="Check-ins"
+                subtext="Total brews logged"
+                accentColor="#8C5A3C"
+                tooltip="Number of coffee check-ins posted to your profile"
+              />
+
+              <CoffeeStatCard
+                icon={Stamp}
+                value="16 / 42"
+                label="Passport Completed"
+                subtext="38% Stamped"
+                progress={38}
+                accentColor="#365C41"
+                tooltip="Official stamps collected in your Coffee Passport"
+              />
+
+              <CoffeeStatCard
+                icon={Heart}
+                value="Spanish Latte"
+                label="Favorite Drink"
+                subtext="Most enjoyed brew"
+                accentColor="#E11D48"
+                tooltip="Your top-rated and most frequently logged coffee drink"
+              />
             </div>
           </div>
+
+          {/* Navigation Tabs */}
+          <div className="profile-tabs">
+            <button
+              onClick={() => setActiveTab('checkins')}
+              className={`profile-tab-btn ${activeTab === 'checkins' ? 'active' : ''}`}
+            >
+              <Grid size={16} /> Posts ({userPosts.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab('saved')}
+              className={`profile-tab-btn ${activeTab === 'saved' ? 'active' : ''}`}
+            >
+              <Bookmark size={16} /> Saved ({savedPosts.length})
+            </button>
+
+            <button
+              onClick={() => setActiveTab('badges')}
+              className={`profile-tab-btn ${activeTab === 'badges' ? 'active' : ''}`}
+            >
+              <Award size={16} /> Badges
+            </button>
+
+            <div 
+              className="profile-tab-indicator" 
+              style={{
+                width: '33.33%',
+                left: activeTab === 'checkins' ? '0%' : activeTab === 'saved' ? '33.33%' : '66.66%'
+              }}
+            ></div>
+          </div>
+
+          {/* Tab Content */}
+          {activeTab === 'checkins' && (
+            userPosts.length > 0 ? (
+              <div className="profile-grid">
+                {userPosts.map(p => (
+                  <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
+                    <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
+                    <div className="profile-grid-overlay">
+                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
+                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="profile-empty-state">
+                <Coffee size={48} strokeWidth={1.5} />
+                <h4>No Posts Yet</h4>
+                <p>Start sharing your coffee experiences! Check in at a café to create your first post.</p>
+              </div>
+            )
+          )}
+
+          {activeTab === 'saved' && (
+            savedPosts.length > 0 ? (
+              <div className="profile-grid">
+                {savedPosts.map(p => (
+                  <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
+                    <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
+                    <div className="profile-grid-overlay">
+                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
+                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="profile-empty-state">
+                <Bookmark size={48} strokeWidth={1.5} />
+                <h4>No Saved Posts</h4>
+                <p>Bookmark posts you love to find them here later. Tap the save icon on any post!</p>
+              </div>
+            )
+          )}
+
+          {activeTab === 'badges' && (
+            BADGES.filter(b => b.unlocked).length > 0 ? (
+              <div className="profile-badges-grid">
+                {BADGES.map(b => (
+                  <div key={b.id} className={`profile-badge-card ${!b.unlocked ? 'locked' : ''}`}>
+                    <div className="badge-icon-wrapper">{b.icon}</div>
+                    <div>
+                      <div className="badge-card-title">
+                        {b.name}
+                        {b.unlocked && <CheckCircle size={12} color="#10b981" style={{marginLeft: '4px', verticalAlign: '-2px'}} />}
+                      </div>
+                      <div className="badge-card-desc">{b.description}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="profile-empty-state">
+                <Award size={48} strokeWidth={1.5} />
+                <h4>No Badges Earned</h4>
+                <p>Complete challenges and milestones to unlock badges. Keep exploring cafés!</p>
+              </div>
+            )
+          )}
         </div>
       </div>
 
