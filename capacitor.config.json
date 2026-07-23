@@ -1,0 +1,18 @@
+{
+  "appId": "com.kapegram.app",
+  "appName": "KapeGram",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true,
+    "backgroundColor": "#FFFDF9"
+  },
+  "plugins": {
+    "StatusBar": {
+      "overlaysWebView": true,
+      "style": "DARK",
+      "backgroundColor": "#00000000"
+    }
+  }
+}
