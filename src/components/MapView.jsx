@@ -45,6 +45,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
 
   const lastSpokenTextRef = useRef('');
   const isSimulatingRef = useRef(false);
+  const routeRequestId = useRef(0);
 
   useEffect(() => {
     isSimulatingRef.current = isSimulating;
@@ -338,9 +339,14 @@ export default function MapView({ cafes, onSelect, selectedId }) {
       return;
     }
 
+    const currentReqId = Date.now();
+    routeRequestId.current = currentReqId;
+
     try {
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`);
       const data = await res.json();
+
+      if (routeRequestId.current !== currentReqId) return;
 
       if (data.routes && data.routes.length > 0) {
         const route = data.routes[0];
@@ -367,6 +373,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
       }
     } catch (e) {
       console.error("OSRM Routing Error", e);
+      if (routeRequestId.current !== currentReqId) return;
       // Fallback to straight line if API fails
       const fallbackDist = cafe.distance_km || 1.5;
       setActiveRoute({

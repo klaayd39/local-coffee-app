@@ -319,6 +319,9 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       return;
     }
 
+    const currentRequestId = Date.now();
+    mapInstanceRef.current._lastRouteRequestId = currentRequestId;
+
     let geometry = [];
     let distText = "";
     let durationText = "";
@@ -352,6 +355,13 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       originalDistKm = cafe.distance_km || 1.5;
       originalDurationSecs = (originalDistKm * 3 + 2) * 60;
     }
+
+    // Prevent race condition: only draw if this is the latest request
+    if (mapInstanceRef.current._lastRouteRequestId !== currentRequestId) {
+      return;
+    }
+
+    if (polylineRef.current) polylineRef.current.remove();
 
     polylineRef.current = window.L.polyline(geometry, {
       color: '#476856',
@@ -438,10 +448,6 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       const marker = window.L.marker([c.lat, c.lng], { icon: customIcon }).addTo(map);
       marker.on('click', () => {
         onSelect(c.id);
-        drawRouteToCafe(c);
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([c.lat, c.lng], 16, { animate: true, duration: 0.8 });
-        }
       });
       markersRef.current[c.id] = marker;
     });
@@ -696,7 +702,6 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
                 className={`strip-card ${selectedId === c.id ? 'active' : ''}`}
                 onClick={() => {
                   onSelect(c.id);
-                  drawRouteToCafe(c);
                 }}
               >
                 <span className="strip-dot" style={{ background: c.accent }} />
@@ -723,7 +728,6 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
                 className={`desktop-cafe-list-item ${selectedId === c.id ? 'active' : ''}`}
                 onClick={() => {
                   onSelect(c.id);
-                  drawRouteToCafe(c);
                 }}
               >
                 <div

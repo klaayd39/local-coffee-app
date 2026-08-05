@@ -2643,11 +2643,13 @@ body {
 .passport-card {
   width: 100%;
   max-width: 480px;
-  background: var(--bg-card);
+  background: var(--liquid-glass-bg);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
   border-radius: 28px;
   padding: 44px 36px 36px;
-  box-shadow: var(--shadow-lg);
-  border: 1px solid var(--line);
+  box-shadow: var(--liquid-glass-shadow);
+  border: 1px solid var(--liquid-glass-border);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -4095,8 +4097,10 @@ body {
 .desktop-app-sidebar {
   width: 240px;
   flex-shrink: 0;
-  background: var(--bg-surface);
-  border-right: 1px solid var(--line);
+  background: var(--liquid-glass-bg);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  border-right: 1px solid var(--liquid-glass-border);
   display: flex;
   flex-direction: column;
   padding: 24px 16px 20px;
@@ -4229,8 +4233,10 @@ body {
   align-items: center;
   gap: 16px;
   padding: 16px 28px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--line);
+  background: var(--liquid-glass-bg);
+  backdrop-filter: var(--liquid-glass-blur);
+  -webkit-backdrop-filter: var(--liquid-glass-blur);
+  border-bottom: 1px solid var(--liquid-glass-border);
   flex-shrink: 0;
 }
 
@@ -6397,6 +6403,7 @@ body {
   margin-bottom: 14px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
