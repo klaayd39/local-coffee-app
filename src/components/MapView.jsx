@@ -39,31 +39,23 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   // Navigation states
   const [isNavigating, setIsNavigating] = useState(false);
   const [navProgressIndex, setNavProgressIndex] = useState(0);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simSpeed, setSimSpeed] = useState(2);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
 
   const lastSpokenTextRef = useRef('');
-  const isSimulatingRef = useRef(false);
   const routeRequestId = useRef(0);
-
-  useEffect(() => {
-    isSimulatingRef.current = isSimulating;
-  }, [isSimulating]);
+  const lastFetchTimeRef = useRef(0);
 
   // Initialize Geolocation Tracking
   useEffect(() => {
     let watchId;
     if (navigator.geolocation) {
       const handlePosition = (pos) => {
-        if (!isSimulatingRef.current) {
-          setUserLoc({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-            name: "Your Location"
-          });
-        }
+        setUserLoc({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          name: "Your Location"
+        });
       };
 
       const handleFallback = () => {
@@ -205,45 +197,10 @@ export default function MapView({ cafes, onSelect, selectedId }) {
       }
     }
   }, [isNavigating, navProgressIndex, activeRoute]);
-
-  // Simulation Progression Timer
-  useEffect(() => {
-    let timer;
-    if (isNavigating && isSimulating && activeRoute && activeRoute.geometry) {
-      timer = setInterval(() => {
-        setNavProgressIndex((prevIndex) => {
-          if (prevIndex < activeRoute.geometry.length - 1) {
-            return prevIndex + 1;
-          } else {
-            clearInterval(timer);
-            setIsSimulating(false);
-            return prevIndex;
-          }
-        });
-      }, 1000 / simSpeed);
-    }
-    return () => {
-      if (timer) clearInterval(timer);
-    };
-  }, [isNavigating, isSimulating, activeRoute, simSpeed]);
-
-  // Update user marker position during simulation
+  // Track proximity to find the current active coordinate index in real GPS mode
+  // and trigger off-route recalculation if needed.
   useEffect(() => {
     if (isNavigating && activeRoute && activeRoute.geometry && activeRoute.geometry.length > 0) {
-      const currentCoord = activeRoute.geometry[navProgressIndex];
-      if (currentCoord) {
-        setUserLoc({
-          lat: currentCoord[0],
-          lng: currentCoord[1],
-          name: "Your Location"
-        });
-      }
-    }
-  }, [isNavigating, navProgressIndex, activeRoute]);
-
-  // Track proximity to find the current active coordinate index in real GPS mode
-  useEffect(() => {
-    if (isNavigating && !isSimulating && activeRoute && activeRoute.geometry && activeRoute.geometry.length > 0) {
       let minDistance = Infinity;
       let closestIdx = 0;
 
@@ -258,8 +215,19 @@ export default function MapView({ cafes, onSelect, selectedId }) {
       if (closestIdx !== navProgressIndex) {
         setNavProgressIndex(closestIdx);
       }
+
+      // Off-route detection: if user is more than 50 meters from the nearest point
+      // on the polyline, recalculate the route.
+      if (minDistance > 0.05) {
+        const now = Date.now();
+        // Throttle to 5 seconds to prevent spam
+        if (now - lastFetchTimeRef.current > 5000) {
+          console.log("Off-route detected, recalculating...");
+          fetchRoute(activeRoute.cafe);
+        }
+      }
     }
-  }, [userLoc, isNavigating, isSimulating, activeRoute]);
+  }, [userLoc, isNavigating, activeRoute]);
 
   const handleLocateMe = () => {
     setMapBounds(null);
@@ -294,8 +262,6 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   const handleStartNavigation = () => {
     setIsNavigating(true);
     setNavProgressIndex(0);
-    setIsSimulating(true);
-    setSimSpeed(2);
   };
 
   const handleOpenExternalMaps = () => {
@@ -340,6 +306,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
     }
 
     const currentReqId = ++routeRequestId.current;
+    lastFetchTimeRef.current = Date.now();
 
     try {
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`);
@@ -595,27 +562,6 @@ export default function MapView({ cafes, onSelect, selectedId }) {
 
             {/* Footer: Controls */}
             <div className="nav-hud-controls">
-              {/* Play / Pause simulation */}
-              <button
-                onClick={() => setIsSimulating(!isSimulating)}
-                className={`nav-hud-btn ${isSimulating ? 'primary' : 'secondary'}`}
-                title={isSimulating ? "Pause Simulation" : "Start Simulation"}
-              >
-                {isSimulating ? <Pause size={16} /> : <Play size={16} />}
-                <span>{isSimulating ? 'Pause Sim' : 'Play Sim'}</span>
-              </button>
-
-              {/* Simulation Speed cycle button */}
-              {isSimulating && (
-                <button
-                  onClick={() => setSimSpeed(prev => prev === 1 ? 2 : prev === 2 ? 5 : prev === 5 ? 10 : 1)}
-                  className="nav-hud-btn secondary"
-                  style={{ maxWidth: '65px' }}
-                  title="Change simulation speed"
-                >
-                  <span>{simSpeed}x</span>
-                </button>
-              )}
 
               {/* Voice guidance toggle */}
               <button
@@ -648,7 +594,6 @@ export default function MapView({ cafes, onSelect, selectedId }) {
                 onClick={() => {
                   setIsNavigating(false);
                   setNavProgressIndex(0);
-                  setIsSimulating(false);
                 }}
                 className="nav-hud-btn danger"
                 style={{ maxWidth: '70px' }}
