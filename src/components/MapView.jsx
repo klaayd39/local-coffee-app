@@ -339,8 +339,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
       return;
     }
 
-    const currentReqId = Date.now();
-    routeRequestId.current = currentReqId;
+    const currentReqId = ++routeRequestId.current;
 
     try {
       const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`);

@@ -319,7 +319,7 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       return;
     }
 
-    const currentRequestId = Date.now();
+    const currentRequestId = (mapInstanceRef.current._lastRouteRequestId || 0) + 1;
     mapInstanceRef.current._lastRouteRequestId = currentRequestId;
 
     let geometry = [];
@@ -637,9 +637,7 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
             {!isNavigating && (
               <button
                 onClick={() => {
-                  setActiveRoute(null);
-                  if (polylineRef.current) polylineRef.current.remove();
-                  if (userMarkerRef.current) userMarkerRef.current.remove();
+                  onSelect(null);
                 }}
                 style={{
                   position: 'absolute', top: 12, right: 12,
