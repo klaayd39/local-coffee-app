@@ -229,7 +229,7 @@ export default function FeedView({
 
                 {/* Tasting Notes Tags */}
                 <div className="feed-tags-row">
-                  {post.tastingNotes.map((note, idx) => (
+                  {(post.tastingNotes || []).map((note, idx) => (
                     <span key={idx} className="feed-tag">🍃 {note}</span>
                   ))}
                 </div>
@@ -292,17 +292,17 @@ export default function FeedView({
             animation: 'slideUp 0.25s ease-out'
           }}>
             <div style={{ padding: '16px', borderBottom: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)' }}>Comments ({activePost.comments.length})</div>
+              <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)' }}>Comments ({(activePost.comments || []).length})</div>
               <button onClick={() => setActiveCommentsPostId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
                 <X size={20} />
               </button>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {activePost.comments.length === 0 ? (
+              {(activePost.comments || []).length === 0 ? (
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', margin: '20px 0' }}>No comments yet. Be the first to comment!</p>
               ) : (
-                activePost.comments.map(c => (
+                (activePost.comments || []).map(c => (
                   <div key={c.id} style={{ display: 'flex', gap: '10px' }}>
                     <img src={c.user.avatar} alt={c.user.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
                     <div style={{ flex: 1, background: 'var(--bg-elevated)', padding: '8px 12px', borderRadius: 'var(--r-md)' }}>
