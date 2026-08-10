@@ -433,8 +433,8 @@ export default function App() {
             <button
               onClick={() => setCreatePostOpen(true)}
               style={{
-                background: 'var(--pine)',
-                color: '#fff',
+                background: 'var(--text-primary)',
+                color: 'var(--bg-base)',
                 border: 'none',
                 borderRadius: 'var(--r-full)',
                 padding: '7px 12px',
