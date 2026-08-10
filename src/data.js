@@ -14,17 +14,7 @@ export const CAFES = [
     logo: "/logos/the-3rd-street.jpg",
     maps_url: "https://www.google.com/maps/place/THE+3RD+STREET/@8.163291,125.1245981,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffabd54db62347:0x6b0eb4d14e6039ed!8m2!3d8.163291!4d125.127173!16s%2Fg%2F11ygmln8xs",
   },
-  {
-    id: "c_bukidnon_brew", name: "Bukidnon Brew Cafe", barangay: "Malaybalay", lat: 8.1575707, lng: 125.1297002,
-    hours: "8:00 AM – 9:00 PM", phone: "Unknown", price_range: "₱₱",
-    has_wifi: true, has_outlets: true, has_study_space: true, pet_friendly: true, has_parking: true,
-    tagline: "Local authentic Bukidnon brew.",
-    accent: "#8b5cf6", accent2: "#7c3aed",
-    rating: 4.7, reviews_count: 95, distance_km: 1.5,
-    emoji: "🏔️",
-    logo: "/logos/bukidnon-brew.jpg",
-    maps_url: "https://www.google.com/maps/place/Bukidnon+Brew+Cafe/@8.1575707,125.1271253,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffaa298e951451:0x332b841f5a39e6d7!8m2!3d8.1575707!4d125.1297002!16s%2Fg%2F1tdvxfbc",
-  },
+
   {
     id: "c7", name: "Malaybalay City Coffee Pimentel (MC2)", barangay: "Poblacion", lat: 8.1596826, lng: 125.1261888,
     hours: "7:00 AM – 9:00 PM", phone: "0917 882 1920", price_range: "₱₱",
