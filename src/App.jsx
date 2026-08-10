@@ -107,13 +107,33 @@ export default function App() {
             setUser({
               id: profile.id,
               name: profile.name,
-              username: profile.username || profile.email.split('@')[0],
+              username: profile.username || profile.email?.split('@')[0],
               avatar: profile.avatar_url,
               bio: profile.bio,
               level: profile.level || 'Bean Explorer',
               points: profile.points || 0
             });
+          } else {
+            setUser({
+              id: session.user.id,
+              name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+              username: session.user.email?.split('@')[0],
+              avatar: session.user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+              bio: '',
+              level: 'Bean Explorer',
+              points: 0
+            });
           }
+        }).catch(() => {
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            username: session.user.email?.split('@')[0],
+            avatar: session.user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            bio: '',
+            level: 'Bean Explorer',
+            points: 0
+          });
         });
       }
     });
@@ -128,11 +148,21 @@ export default function App() {
           setUser({
             id: profile.id,
             name: profile.name,
-            username: profile.username || profile.email.split('@')[0],
+            username: profile.username || profile.email?.split('@')[0],
             avatar: profile.avatar_url,
             bio: profile.bio,
             level: profile.level || 'Bean Explorer',
             points: profile.points || 0
+          });
+        } else {
+          setUser({
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+            username: session.user.email?.split('@')[0],
+            avatar: session.user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+            bio: '',
+            level: 'Bean Explorer',
+            points: 0
           });
         }
         // Fetch user stamps
