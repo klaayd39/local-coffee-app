@@ -138,18 +138,18 @@ export default function ProfileView({ user: propUser, posts = [], savedPostIds =
       } catch (err) {
         console.warn('Error loading Supabase profile, using default:', err.message);
         setProfile({
-          id: propUser.id,
-          name: propUser.name,
-          username: propUser.username,
-          avatar_url: propUser.avatar,
-          bio: propUser.bio,
-          level: propUser.level,
-          points: propUser.points,
-          followersCount: propUser.followersCount,
-          followingCount: propUser.followingCount,
-          checkInsCount: propUser.checkInsCount
+          id: propUser?.id,
+          name: propUser?.name || propUser?.user_metadata?.full_name,
+          username: propUser?.username || propUser?.email?.split('@')[0],
+          avatar_url: propUser?.avatar,
+          bio: propUser?.bio,
+          level: propUser?.level || 'Bean Explorer',
+          points: propUser?.points || 0,
+          followersCount: propUser?.followersCount || 0,
+          followingCount: propUser?.followingCount || 0,
+          checkInsCount: propUser?.checkInsCount || 0
         });
-        setEditForm({ name: propUser.name || '', username: propUser.username || '', bio: propUser.bio || '', avatar_url: propUser.avatar_url || propUser.avatar || '', cover_url: propUser.cover_url || localStorage.getItem('local_cover_url') || '' });
+        setEditForm({ name: propUser?.name || propUser?.user_metadata?.full_name || '', username: propUser?.username || propUser?.email?.split('@')[0] || '', bio: propUser?.bio || '', avatar_url: propUser?.avatar_url || propUser?.avatar || '', cover_url: propUser?.cover_url || localStorage.getItem('local_cover_url') || '' });
       } finally {
         setLoading(false);
       }
@@ -267,14 +267,6 @@ export default function ProfileView({ user: propUser, posts = [], savedPostIds =
     if (b.id === 'b2' && new Set(userPosts.map(p => p.cafe_id)).size >= 5) return { ...b, unlocked: true };
     return b;
   });
-
-  if (loading) {
-    return (
-      <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)' }}>
-        Loading Coffee Passport Profile...
-      </div>
-    );
-  }
 
   const avatarImg = currentUserData.avatar_url || currentUserData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200';
   const coverUrl = currentUserData.cover_url || localStorage.getItem('local_cover_url') || '';
