@@ -94,6 +94,8 @@ export default function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [dataLoading, setDataLoading] = useState(true);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   // Load cafes
   useEffect(() => {
