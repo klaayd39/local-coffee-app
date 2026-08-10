@@ -3,7 +3,9 @@ import {
   Heart, MessageCircle, Share2, Bookmark, Star, MapPin,
   Coffee, Sparkles, Send, X, PlusCircle, CheckCircle, Flame, Award, ChevronRight
 } from 'lucide-react';
-import { STORIES } from '../data/socialData.js';
+const STORIES = [
+  { id: 's1', user: { name: 'KapeGram Team', avatar: '/icon-192.png' }, hasUnread: true }
+];
 
 export default function FeedView({
   posts,

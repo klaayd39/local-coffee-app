@@ -6,8 +6,16 @@ import {
   Flame, Star, Trophy, Compass, Sparkles, BookOpen, ThumbsUp, Info
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { CURRENT_USER, USERS, BADGES, POSTS } from '../data/socialData.js';
 import { getCurrentProfile, updateProfile, signOutUser } from '../lib/supabaseClient.js';
+
+// Configuration for achievable badges in the app
+const BADGE_CONFIG = [
+  { id: 'b1', name: 'First Sip', description: 'Log your first coffee check-in.', icon: <Award size={20} color="#f59e0b" />, unlocked: true },
+  { id: 'b2', name: 'Local Guide', description: 'Review 5 different cafes.', icon: <Compass size={20} color="#3b82f6" />, unlocked: false },
+  { id: 'b3', name: 'Latte Lover', description: 'Log 10 Lattes.', icon: <Heart size={20} color="#ec4899" />, unlocked: false },
+  { id: 'b4', name: 'Night Owl', description: 'Check-in after 8 PM.', icon: <Moon size={20} color="#8b5cf6" />, unlocked: false },
+  { id: 'b5', name: 'Social Butterfly', description: 'Get 50 likes on a post.', icon: <Flame size={20} color="#ef4444" />, unlocked: false }
+];
 
 // Animated Counter Hook
 function useAnimatedCounter(targetValue, duration = 1200) {
@@ -75,7 +83,7 @@ function CoffeeStatCard({ icon: Icon, value, label, subtext, progress, accentCol
   );
 }
 
-export default function ProfileView({ user: propUser = CURRENT_USER, savedPostIds = [], onOpenPost, onLogout }) {
+export default function ProfileView({ user: propUser, posts = [], savedPostIds = [], onOpenPost, onLogout }) {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -114,18 +122,18 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
           setEditForm({ name: data.name || '', username: data.username || '', bio: data.bio || '', avatar_url: data.avatar_url || '', cover_url: data.cover_url || localStorage.getItem('local_cover_url') || '' });
         } else {
           setProfile({
-            id: propUser.id,
-            name: propUser.name,
-            username: propUser.username,
-            avatar_url: propUser.avatar,
-            bio: propUser.bio,
-            level: propUser.level,
-            points: propUser.points,
-            followersCount: propUser.followersCount,
-            followingCount: propUser.followingCount,
-            checkInsCount: propUser.checkInsCount
+            id: propUser?.id,
+            name: propUser?.name || propUser?.user_metadata?.full_name,
+            username: propUser?.username || propUser?.email?.split('@')[0],
+            avatar_url: propUser?.avatar,
+            bio: propUser?.bio,
+            level: propUser?.level || 'Bean Explorer',
+            points: propUser?.points || 0,
+            followersCount: propUser?.followersCount || 0,
+            followingCount: propUser?.followingCount || 0,
+            checkInsCount: propUser?.checkInsCount || 0
           });
-          setEditForm({ name: propUser.name || '', username: propUser.username || '', bio: propUser.bio || '', avatar_url: propUser.avatar_url || propUser.avatar || '', cover_url: propUser.cover_url || localStorage.getItem('local_cover_url') || '' });
+          setEditForm({ name: propUser?.name || propUser?.user_metadata?.full_name || '', username: propUser?.username || propUser?.email?.split('@')[0] || '', bio: propUser?.bio || '', avatar_url: propUser?.avatar_url || propUser?.avatar || '', cover_url: propUser?.cover_url || localStorage.getItem('local_cover_url') || '' });
         }
       } catch (err) {
         console.warn('Error loading Supabase profile, using default:', err.message);
@@ -149,9 +157,9 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
     loadProfile();
   }, [propUser]);
 
-  const [followers, setFollowers] = useState(propUser.followersCount || 142);
+  const [followers, setFollowers] = useState(propUser?.followersCount || 0);
 
-  const currentUserData = profile || propUser;
+  const currentUserData = profile || propUser || {};
   const isMe = true;
 
   const toggleFollow = () => {
@@ -250,8 +258,15 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
     if (onLogout) onLogout();
   };
 
-  const userPosts = POSTS.filter(p => p.user.id === propUser.id || p.user.name === currentUserData.name);
-  const savedPosts = POSTS.filter(p => savedPostIds.includes(p.id));
+  const userPosts = posts.filter(p => p.user_id === propUser?.id || p.user?.id === propUser?.id);
+  const savedPosts = posts.filter(p => savedPostIds.includes(p.id));
+
+  // Determine badges dynamically based on user data
+  const badges = BADGE_CONFIG.map(b => {
+    if (b.id === 'b1' && userPosts.length > 0) return { ...b, unlocked: true };
+    if (b.id === 'b2' && new Set(userPosts.map(p => p.cafe_id)).size >= 5) return { ...b, unlocked: true };
+    return b;
+  });
 
   if (loading) {
     return (
@@ -328,10 +343,10 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
             ) : (
               <div className="profile-level-container">
                 <div className="profile-level-text">
-                  👑 {currentUserData.level || 'Bean Explorer'} <span style={{fontSize:'11px', color:'var(--text-muted)'}}>({currentUserData.points || 142} / 200 PTS)</span>
+                  👑 {currentUserData.level || 'Bean Explorer'} <span style={{fontSize:'11px', color:'var(--text-muted)'}}>({currentUserData.points || 0} / 200 PTS)</span>
                 </div>
                 <div className="profile-level-bar-bg">
-                  <div className="profile-level-bar-fill" style={{ width: `${Math.min(100, ((currentUserData.points || 142) / 200) * 100)}%` }}></div>
+                  <div className="profile-level-bar-fill" style={{ width: `${Math.min(100, ((currentUserData.points || 0) / 200) * 100)}%` }}></div>
                 </div>
               </div>
             )}
@@ -422,7 +437,7 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
             <div className="coffee-stats-grid">
               <CoffeeStatCard
                 icon={Coffee}
-                value={userPosts.length || currentUserData.checkInsCount || 12}
+                value={userPosts.length}
                 label="Check-ins"
                 subtext="Total brews logged"
                 accentColor="#8C5A3C"
@@ -431,10 +446,10 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
 
               <CoffeeStatCard
                 icon={Stamp}
-                value="16 / 42"
+                value={`${new Set(userPosts.map(p => p.cafe_id)).size} / 42`}
                 label="Passport Completed"
-                subtext="38% Stamped"
-                progress={38}
+                subtext={`${Math.round((new Set(userPosts.map(p => p.cafe_id)).size / 42) * 100)}% Stamped`}
+                progress={(new Set(userPosts.map(p => p.cafe_id)).size / 42) * 100}
                 accentColor="#365C41"
                 tooltip="Official stamps collected in your Coffee Passport"
               />
@@ -488,10 +503,10 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
               <div className="profile-grid">
                 {userPosts.map(p => (
                   <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
-                    <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
+                    <img src={p.image_url || p.image} alt={p.drink_name || p.drinkName} className="profile-grid-img" />
                     <div className="profile-grid-overlay">
-                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
-                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
+                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {p.likes || 0}</div>
+                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {p.comments || 0}</div>
                     </div>
                   </div>
                 ))}
@@ -510,10 +525,10 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
               <div className="profile-grid">
                 {savedPosts.map(p => (
                   <div key={p.id} className="profile-grid-item" onClick={() => onOpenPost?.(p)}>
-                    <img src={p.image} alt={p.drinkName} className="profile-grid-img" />
+                    <img src={p.image_url || p.image} alt={p.drink_name || p.drinkName} className="profile-grid-img" />
                     <div className="profile-grid-overlay">
-                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {Math.floor(Math.random() * 40) + 10}</div>
-                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {Math.floor(Math.random() * 8) + 1}</div>
+                      <div className="profile-grid-stat"><Heart size={16} fill="white" /> {p.likes || 0}</div>
+                      <div className="profile-grid-stat"><MessageCircle size={16} fill="white" /> {p.comments || 0}</div>
                     </div>
                   </div>
                 ))}
@@ -528,9 +543,9 @@ export default function ProfileView({ user: propUser = CURRENT_USER, savedPostId
           )}
 
           {activeTab === 'badges' && (
-            BADGES.filter(b => b.unlocked).length > 0 ? (
+            badges.filter(b => b.unlocked).length > 0 ? (
               <div className="profile-badges-grid">
-                {BADGES.map(b => (
+                {badges.map(b => (
                   <div key={b.id} className={`profile-badge-card ${!b.unlocked ? 'locked' : ''}`}>
                     <div className="badge-icon-wrapper">{b.icon}</div>
                     <div>

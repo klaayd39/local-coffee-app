@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { Search, Flame, Sparkles, Star, TrendingUp, Coffee, ArrowRight } from 'lucide-react';
-import { TRENDING_DRINKS, FEATURED_BEANS } from '../data/socialData.js';
+
+const TRENDING_DRINKS = [
+  { id: 't1', name: 'Bukidnon Kape', cafeName: 'The 3rd Street', price: '₱120', rating: 4.9, image: 'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&q=80', trending: true },
+  { id: 't2', name: 'Caramel Macchiato', cafeName: 'MC2', price: '₱145', rating: 4.8, image: 'https://images.unsplash.com/photo-1485808191679-5f86510681a2?w=400&q=80', trending: true },
+  { id: 't3', name: 'Dirty Matcha', cafeName: 'Coffee Wagon', price: '₱160', rating: 4.7, image: 'https://images.unsplash.com/photo-1515823662415-e0fd0d98134e?w=400&q=80', trending: true },
+  { id: 't4', name: 'Spanish Latte', cafeName: 'Breathe Café', price: '₱150', rating: 4.9, image: 'https://images.unsplash.com/photo-1578314675249-a6910f80cc4e?w=400&q=80', trending: true },
+];
+
+const FEATURED_BEANS = [
+  { id: 'b1', origin: 'Mt. Kitanglad, Bukidnon', notes: 'Dark Chocolate, Nutty', roaster: 'Coffee Wagon Roastery', level: 'Medium-Dark' },
+  { id: 'b2', origin: 'Kalatungan Range', notes: 'Floral, Citrus, Berry', roaster: 'MC2 Reserve', level: 'Light' },
+];
 
 export default function ExploreTrendingView({ cafes, onSelectCafe }) {
   const [query, setQuery] = useState('');

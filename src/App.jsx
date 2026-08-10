@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 
 import { fetchCafes } from './data.js';
-import { POSTS as INITIAL_POSTS, CURRENT_USER } from './data/socialData.js';
+
 import { AMENITY_META } from './components/shared.jsx';
 import { 
   supabase, 
@@ -60,8 +60,8 @@ const NAV_ITEMS = [
 
 export default function App() {
   const [cafes, setCafes] = useState([]);
-  const [posts, setPosts] = useState(INITIAL_POSTS);
-  const [savedPostIds, setSavedPostIds] = useState(['p2']);
+  const [posts, setPosts] = useState([]);
+  const [savedPostIds, setSavedPostIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('feed');
   const [selectedId, setSelectedId] = useState(null);
@@ -90,7 +90,7 @@ export default function App() {
 
   // Auth & View state
   const [showLanding, setShowLanding] = useState(true);
-  const [user, setUser] = useState(CURRENT_USER);
+  const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -388,7 +388,7 @@ export default function App() {
   ) : view === 'passport' ? (
     <PassportView cafes={cafes} stamps={stamps} userPoints={userPoints} onBack={goBack} />
   ) : view === 'profile' ? (
-    <ProfileView user={user || CURRENT_USER} savedPostIds={savedPostIds} onOpenPost={(id) => setView('feed')} onLogout={handleLogout} />
+    <ProfileView user={user} posts={posts} savedPostIds={savedPostIds} onOpenPost={(id) => setView('feed')} onLogout={handleLogout} />
   ) : view === 'cafes' ? (
     <CafeList cafes={filtered} onOpen={setSelectedId} stamps={stamps} onBack={goBack} />
   ) : view === 'challenges' ? (

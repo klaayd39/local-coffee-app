@@ -1,5 +1,8 @@
 import { X, Heart, UserPlus, Award, Bell } from 'lucide-react';
-import { NOTIFICATIONS } from '../data/socialData.js';
+
+const NOTIFICATIONS = [
+  { id: 'welcome1', text: 'Welcome to KapeGram! Start exploring cafes and logging your brews.', time: 'Just now', icon: '☕', read: false }
+];
 
 export default function NotificationDrawer({ onClose }) {
   return (
