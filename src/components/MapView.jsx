@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation, X, Search, LocateFixed, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink } from 'lucide-react';
+import { getDistanceKm, getMinDistanceToRoute } from '../utils/geo';
 
 // Default Location (Malaybalay City Center)
 const DEFAULT_LOCATION = { lat: 8.1575, lng: 125.1248, name: "Malaybalay City Center" };
@@ -25,7 +26,7 @@ function MapController({ center, zoom, bounds, locateTrigger, selectedLocation, 
     } else if (locateTrigger > 0) {
       map.flyTo(center, zoom || 15, { animate: true, duration: 0.6 });
     }
-  }, [selectedLocation, bounds, locateTrigger, navigationLocation, map]);
+  }, [selectedLocation, bounds, locateTrigger, navigationLocation, map, center, zoom]);
   return null;
 }
 
@@ -99,19 +100,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
     };
   }, []);
 
-  // Geolocation math helpers
-  const getDistanceKm = (lat1, lng1, lat2, lng2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lng2 - lng1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
+  // Geolocation math helpers are now imported from geo.js
   // Text-To-Speech function
   const speakMessage = (text) => {
     if ('speechSynthesis' in window && voiceEnabled) {
@@ -201,16 +190,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   // and trigger off-route recalculation if needed.
   useEffect(() => {
     if (isNavigating && activeRoute && activeRoute.geometry && activeRoute.geometry.length > 0) {
-      let minDistance = Infinity;
-      let closestIdx = 0;
-
-      activeRoute.geometry.forEach((coord, idx) => {
-        const dist = getDistanceKm(userLoc.lat, userLoc.lng, coord[0], coord[1]);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestIdx = idx;
-        }
-      });
+      const { minDistance, closestIdx } = getMinDistanceToRoute(userLoc.lat, userLoc.lng, activeRoute.geometry);
 
       if (closestIdx !== navProgressIndex) {
         setNavProgressIndex(closestIdx);
@@ -231,7 +211,6 @@ export default function MapView({ cafes, onSelect, selectedId }) {
 
   const handleLocateMe = () => {
     setMapBounds(null);
-    setLocateTrigger(prev => prev + 1);
 
     if (navigator.geolocation) {
       const handlePos = (pos) => {
@@ -242,6 +221,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
           name: "Your Location"
         };
         setUserLoc(loc);
+        setLocateTrigger(prev => prev + 1);
       };
 
       navigator.geolocation.getCurrentPosition(
@@ -309,7 +289,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
     lastFetchTimeRef.current = Date.now();
 
     try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`);
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson&steps=true`);
       const data = await res.json();
 
       if (routeRequestId.current !== currentReqId) return;
@@ -318,6 +298,20 @@ export default function MapView({ cafes, onSelect, selectedId }) {
         const route = data.routes[0];
         // OSRM geojson coordinates are [lng, lat], Leaflet needs [lat, lng]
         const geometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+        
+        const parsedSteps = route.legs && route.legs[0] && route.legs[0].steps
+          ? route.legs[0].steps.map(s => {
+              const m = s.maneuver || {};
+              const type = m.type === 'turn' ? 'Turn' : m.type === 'depart' ? 'Head' : m.type === 'arrive' ? 'Arrive' : 'Continue';
+              const mod = m.modifier ? ` ${m.modifier}` : '';
+              const dest = s.name ? ` on ${s.name}` : '';
+              return `${type}${mod}${dest}`;
+            })
+          : [
+              `Head towards ${cafe.barangay}`,
+              `Follow route for ${(route.distance / 1000).toFixed(1)} km`,
+              `Arrive at ${cafe.name}`
+            ];
 
         setActiveRoute({
           cafe,
@@ -326,11 +320,7 @@ export default function MapView({ cafes, onSelect, selectedId }) {
           estTime: Math.ceil(route.duration / 60) + " mins", // mins
           originalDistKm: route.distance / 1000,
           originalDurationSecs: route.duration,
-          steps: [
-            `Head towards ${cafe.barangay}`,
-            `Follow route for ${(route.distance / 1000).toFixed(1)} km`,
-            `Arrive at ${cafe.name}`
-          ]
+          steps: parsedSteps
         });
 
         // Fit map bounds to show full route

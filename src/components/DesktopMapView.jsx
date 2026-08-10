@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, ChevronRight, X, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink, LocateFixed } from 'lucide-react';
+import { getDistanceKm, getMinDistanceToRoute } from '../utils/geo';
 
 export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   const mapContainerRef = useRef(null);
@@ -69,17 +70,7 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   }, []);
 
   // Geolocation math helpers
-  const getDistanceKm = (lat1, lng1, lat2, lng2) => {
-    const R = 6371; // Earth's radius in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lng2 - lng1) * Math.PI / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
+  // Geolocation math helpers are now imported from geo.js
 
   // Text-To-Speech function
   const speakMessage = (text) => {
@@ -234,16 +225,7 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   // and trigger off-route recalculation if needed.
   useEffect(() => {
     if (isNavigating && activeRoute && activeRoute.geometry && activeRoute.geometry.length > 0) {
-      let minDistance = Infinity;
-      let closestIdx = 0;
-      
-      activeRoute.geometry.forEach((coord, idx) => {
-        const dist = getDistanceKm(userLoc.lat, userLoc.lng, coord[0], coord[1]);
-        if (dist < minDistance) {
-          minDistance = dist;
-          closestIdx = idx;
-        }
-      });
+      const { minDistance, closestIdx } = getMinDistanceToRoute(userLoc.lat, userLoc.lng, activeRoute.geometry);
       
       if (closestIdx !== navProgressIndex) {
         setNavProgressIndex(closestIdx);
@@ -296,7 +278,7 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
     let originalDurationSecs = 0;
 
     try {
-      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson`);
+      const res = await fetch(`https://router.project-osrm.org/route/v1/driving/${userLoc.lng},${userLoc.lat};${cafe.lng},${cafe.lat}?overview=full&geometries=geojson&steps=true`);
       const data = await res.json();
       
       if (data.routes && data.routes.length > 0) {
@@ -306,6 +288,30 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
         durationText = Math.ceil(route.duration / 60) + " mins";
         originalDistKm = route.distance / 1000;
         originalDurationSecs = route.duration;
+
+        const parsedSteps = route.legs && route.legs[0] && route.legs[0].steps
+          ? route.legs[0].steps.map(s => {
+              const m = s.maneuver || {};
+              const type = m.type === 'turn' ? 'Turn' : m.type === 'depart' ? 'Head' : m.type === 'arrive' ? 'Arrive' : 'Continue';
+              const mod = m.modifier ? ` ${m.modifier}` : '';
+              const dest = s.name ? ` on ${s.name}` : '';
+              return `${type}${mod}${dest}`;
+            })
+          : [
+              `Head towards ${cafe.barangay}`,
+              `Follow route for ${(route.distance / 1000).toFixed(1)} km`,
+              `Arrive at ${cafe.name}`
+            ];
+
+        setActiveRoute({
+          cafe,
+          geometry,
+          dist: distText,
+          estTime: durationText,
+          originalDistKm,
+          originalDurationSecs,
+          steps: parsedSteps
+        });
       } else {
         throw new Error("No route found");
       }
@@ -321,6 +327,15 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       durationText = `${Math.ceil(cafe.distance_km * 3 + 2)} mins`;
       originalDistKm = cafe.distance_km || 1.5;
       originalDurationSecs = (originalDistKm * 3 + 2) * 60;
+      setActiveRoute({
+        cafe,
+        geometry,
+        dist: distText,
+        estTime: durationText,
+        originalDistKm,
+        originalDurationSecs,
+        steps: [`Head towards ${cafe.name}`]
+      });
     }
 
     // Prevent race condition: only draw if this is the latest request
@@ -343,20 +358,6 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
       [cafe.lat, cafe.lng]
     ]);
     map.fitBounds(bounds, { padding: [40, 40] });
-
-    setActiveRoute({
-      cafe,
-      geometry,
-      dist: distText,
-      estTime: durationText,
-      originalDistKm,
-      originalDurationSecs,
-      steps: [
-        `Head north towards ${cafe.barangay}`,
-        `Follow optimal path to ${cafe.name} (${distText} km)`,
-        `Arrive at ${cafe.name}`
-      ]
-    });
   };
 
   useEffect(() => {
