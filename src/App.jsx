@@ -9,8 +9,14 @@ import {
 import { fetchCafes } from './data.js';
 import { POSTS as INITIAL_POSTS, CURRENT_USER } from './data/socialData.js';
 import { AMENITY_META } from './components/shared.jsx';
-import { supabase, getCurrentProfile } from './lib/supabaseClient.js';
-
+import { 
+  supabase, 
+  getCurrentProfile, 
+  fetchSupabasePosts, 
+  createSupabasePost,
+  fetchUserStamps,
+  claimStamp
+} from './lib/supabaseClient.js';
 import MapView from './components/MapView.jsx';
 import CafeList from './components/CafeList.jsx';
 import CafeDetail from './components/CafeDetail.jsx';
@@ -129,13 +135,48 @@ export default function App() {
             points: profile.points || 0
           });
         }
+        // Fetch user stamps
+        fetchUserStamps().then(stamps => {
+          setStamps(stamps);
+        }).catch(err => console.error("Error fetching stamps:", err));
       } else {
         setUser(null);
         setShowLanding(true);
+        setStamps({}); // Clear stamps on logout
       }
     });
 
     return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch Supabase Posts
+  useEffect(() => {
+    fetchSupabasePosts().then(remotePosts => {
+      // Map remote posts to the frontend expected format
+      const mapped = remotePosts.map(p => ({
+        id: p.id,
+        cafeId: p.cafe_id,
+        cafeName: p.cafe_name,
+        location: '', // Supabase doesn't store this directly
+        image: p.image_url,
+        drinkName: p.drink_name,
+        rating: p.rating,
+        caption: p.caption,
+        user: {
+          name: p.profiles?.name || 'Unknown User',
+          username: p.profiles?.username || 'user',
+          avatar: p.profiles?.avatar_url || ''
+        },
+        likesCount: 0,
+        commentsCount: 0,
+        isLiked: false,
+        isSaved: false,
+        timestamp: new Date(p.created_at).toLocaleDateString(),
+        comments: []
+      }));
+      // Merge with INITIAL_POSTS so the feed doesn't look empty
+      setPosts([...mapped, ...INITIAL_POSTS]);
+    }).catch(err => console.error("Failed to load live posts:", err));
   }, []);
 
   useEffect(() => {
@@ -223,20 +264,60 @@ export default function App() {
     }));
   };
 
-  const handleCreatePostSubmit = (newPost) => {
-    setPosts(prev => [newPost, ...prev]);
-    setUserPoints(pts => pts + 50);
-    showToast('🎉 Review posted! +50 pts added');
+  const handleCreatePostSubmit = async (newPost) => {
+    try {
+      if (!user) throw new Error("Must be logged in");
+      
+      // Push to Supabase backend
+      const savedPost = await createSupabasePost({
+        cafeId: newPost.cafeId,
+        cafeName: newPost.cafeName,
+        drinkName: newPost.drinkName,
+        rating: newPost.rating,
+        caption: newPost.caption,
+        image: newPost.image
+      });
+
+      // Format back to frontend structure to instantly update the feed
+      const mappedPost = {
+        ...newPost,
+        id: savedPost.id,
+        user: {
+          name: user.name,
+          username: user.username,
+          avatar: user.avatar
+        },
+        timestamp: 'Just now'
+      };
+
+      setPosts(prev => [mappedPost, ...prev]);
+      setUserPoints(pts => pts + 50);
+      showToast('🎉 Review posted! +50 pts added');
+    } catch (error) {
+      console.error("Failed to post:", error);
+      showToast('Failed to post review. Are you logged in?');
+    }
   };
 
-  const handleStamp = (cafeId) => {
+  const handleStamp = async (cafeId) => {
     const wasStamped = !!stamps[cafeId];
-    setStamps(prev => ({ ...prev, [cafeId]: !prev[cafeId] }));
-    if (!wasStamped) {
+    if (wasStamped) {
+      showToast('Stamp already claimed!');
+      return;
+    }
+    
+    // Optimistic UI update
+    setStamps(prev => ({ ...prev, [cafeId]: true }));
+    
+    try {
+      await claimStamp(cafeId);
       setUserPoints(p => p + 50);
       showToast('✅ Passport stamped! +50 pts');
-    } else {
-      showToast('Stamp removed');
+    } catch (error) {
+      // Revert if failed
+      console.error("Failed to claim stamp:", error);
+      setStamps(prev => ({ ...prev, [cafeId]: false }));
+      showToast('Failed to claim stamp. Are you logged in?');
     }
   };
 
@@ -300,8 +381,8 @@ export default function App() {
     />
   ) : view === 'map' ? (
     isMobile
-      ? <MapView cafes={filtered} onSelect={setSelectedId} selectedId={selectedId} />
-      : <DesktopMapView cafes={filtered} onSelect={setSelectedId} selectedId={selectedId} />
+      ? <MapView cafes={filtered} onSelect={setSelectedId} selectedId={selectedId} showToast={showToast} />
+      : <DesktopMapView cafes={filtered} onSelect={setSelectedId} selectedId={selectedId} showToast={showToast} />
   ) : view === 'explore' ? (
     <ExploreTrendingView cafes={cafes} onSelectCafe={(id) => { setSelectedId(id); setView('map'); }} />
   ) : view === 'passport' ? (

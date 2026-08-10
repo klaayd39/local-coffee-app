@@ -41,7 +41,7 @@ function MapController({ center, zoom, bounds, locateTrigger, selectedLocation, 
   return null;
 }
 
-export default function MapView({ cafes, onSelect, selectedId }) {
+export default function MapView({ cafes, onSelect, selectedId, showToast }) {
   const [userLoc, setUserLoc] = useState(DEFAULT_LOCATION);
   const [activeRoute, setActiveRoute] = useState(null); // { cafe, steps, dist, estTime, geometry }
   const [searchQuery, setSearchQuery] = useState('');
@@ -196,13 +196,25 @@ export default function MapView({ cafes, onSelect, selectedId }) {
     }
   }, [userLoc, isNavigating, activeRoute]);
 
-  const handleLocateMe = () => {
+  const handleLocateMe = async () => {
     setMapBounds(null);
-    // Instantly pan to best-known location for immediate visual feedback
-    setLocateTrigger(prev => prev + 1);
+    if (showToast) showToast('Acquiring precise GPS location...');
     
+    // Explicitly check for denied permissions first to inform the user
+    if (navigator.permissions) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === 'denied') {
+          if (showToast) showToast('Location permission denied! Please allow it in your browser settings.');
+          return;
+        }
+      } catch (e) {
+        console.warn('Permissions API not supported', e);
+      }
+    }
+
     if (navigator.geolocation) {
-      // Fetch a fresh GPS reading silently in the background
+      // Fetch a fresh GPS reading in the background with a long timeout for mobile
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const loc = {
@@ -213,9 +225,17 @@ export default function MapView({ cafes, onSelect, selectedId }) {
           };
           setUserLoc(loc);
           setLocateTrigger(prev => prev + 1); // Pan again to the exact updated location
+          if (showToast) showToast('Precise GPS location acquired!');
         },
         (err) => {
           console.warn('High accuracy failed, trying low accuracy...', err);
+          if (err.code === 3 && showToast) {
+            showToast('GPS signal weak. Falling back to approximate location.');
+          } else if (err.code === 1 && showToast) {
+            showToast('Location permission denied.');
+            return;
+          }
+          
           navigator.geolocation.getCurrentPosition(
             (pos2) => {
               const loc = {
@@ -229,20 +249,25 @@ export default function MapView({ cafes, onSelect, selectedId }) {
             },
             (err2) => {
               console.warn('Locate me explicit error:', err2);
-              // Silent fallback: try IP geolocation if hardware GPS is completely broken
+              if (showToast) showToast('Hardware GPS failed. Using IP fallback.');
+              // Fallback: try IP geolocation if hardware GPS is completely broken
               fetchIpLocation().then(ipLoc => {
                 if (ipLoc) {
                   console.log("Found location via IP fallback:", ipLoc);
                   setUserLoc(ipLoc);
                   setLocateTrigger(prev => prev + 1);
+                } else if (showToast) {
+                  showToast('Failed to detect any location.');
                 }
               });
             },
-            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 }
           );
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
+    } else if (showToast) {
+      showToast('Geolocation is not supported by your browser.');
     }
   };
 

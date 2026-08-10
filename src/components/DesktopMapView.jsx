@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, ChevronRight, X, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink, LocateFixed } from 'lucide-react';
 import { getDistanceKm, getMinDistanceToRoute, fetchIpLocation } from '../utils/geo';
-export default function DesktopMapView({ cafes, onSelect, selectedId }) {
+export default function DesktopMapView({ cafes, onSelect, selectedId, showToast }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
@@ -408,14 +408,24 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
     }
   }, [cafes, selectedId]);
 
-  const handleLocateMe = () => {
-    // 1. Instantly provide visual feedback by panning to the current best-known location
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+  const handleLocateMe = async () => {
+    if (showToast) showToast('Acquiring precise GPS location...');
+
+    // Explicitly check for denied permissions first
+    if (navigator.permissions) {
+      try {
+        const permission = await navigator.permissions.query({ name: 'geolocation' });
+        if (permission.state === 'denied') {
+          if (showToast) showToast('Location permission denied! Please allow it in your browser settings.');
+          return;
+        }
+      } catch (e) {
+        console.warn('Permissions API not supported', e);
+      }
     }
-    
-    // 2. Try to fetch a newer high-accuracy location silently in the background
+
     if (navigator.geolocation) {
+      // Fetch a fresh GPS reading
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const loc = {
@@ -428,9 +438,17 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
           if (mapInstanceRef.current) {
             mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { animate: true, duration: 0.8 });
           }
+          if (showToast) showToast('Precise GPS location acquired!');
         },
         (err) => {
-          console.warn('Desktop high accuracy locate failed, trying low accuracy...', err);
+          console.warn('High accuracy failed, trying low accuracy...', err);
+          if (err.code === 3 && showToast) {
+            showToast('GPS signal weak. Falling back to approximate location.');
+          } else if (err.code === 1 && showToast) {
+            showToast('Location permission denied.');
+            return;
+          }
+
           navigator.geolocation.getCurrentPosition(
             (pos2) => {
               const loc = {
@@ -446,7 +464,8 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
             },
             (err2) => {
               console.warn('Desktop locate me explicit error:', err2);
-              // Silent fallback: try IP geolocation if hardware GPS is completely broken
+              if (showToast) showToast('Hardware GPS failed. Using IP fallback.');
+              // Fallback: try IP geolocation if hardware GPS is completely broken
               fetchIpLocation().then(ipLoc => {
                 if (ipLoc) {
                   console.log("Found location via IP fallback:", ipLoc);
@@ -454,14 +473,18 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
                   if (mapInstanceRef.current) {
                     mapInstanceRef.current.flyTo([ipLoc.lat, ipLoc.lng], 16, { animate: true, duration: 0.8 });
                   }
+                } else if (showToast) {
+                  showToast('Failed to detect any location.');
                 }
               });
             },
-            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
+            { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 }
           );
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
       );
+    } else if (showToast) {
+      showToast('Geolocation is not supported by your browser.');
     }
   };
 
