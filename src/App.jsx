@@ -62,7 +62,7 @@ export default function App() {
   const [cafes, setCafes] = useState([]);
   const [posts, setPosts] = useState([]);
   const [savedPostIds, setSavedPostIds] = useState([]);
-  const [loading, setLoading] = useState(true);
+
   const [view, setView] = useState('feed');
   const [selectedId, setSelectedId] = useState(null);
   const [search, setSearch] = useState('');
@@ -89,11 +89,22 @@ export default function App() {
   };
 
   // Auth & View state
-  const [showLanding, setShowLanding] = useState(true);
-  const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [user, setUser] = useState(null);
+  const [showLanding, setShowLanding] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+
+  // Load cafes
+  useEffect(() => {
+    fetchCafes().then(data => {
+      setCafes(data);
+      setDataLoading(false);
+    }).catch(err => {
+      console.error("Failed to load cafes:", err);
+      setDataLoading(false);
+    });
+  }, []);
 
   // Supabase Auth State Observer
   useEffect(() => {
@@ -134,12 +145,19 @@ export default function App() {
             level: 'Bean Explorer',
             points: 0
           });
+        }).finally(() => {
+          setAuthLoading(false);
         });
+      } else {
+        setShowLanding(true);
+        setAuthLoading(false);
       }
     });
 
     // Listen for sign-in / sign-out events in real-time
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'INITIAL_SESSION') return; // Handled by getSession
+      
       setSession(session);
       if (session?.user) {
         setShowLanding(false);
@@ -381,6 +399,15 @@ export default function App() {
 
   const showSearchFilter = !selected && (view === 'map' || view === 'cafes');
 
+  if (authLoading || dataLoading) {
+    return (
+      <div className="loading-screen" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--bg-primary)' }}>
+        <div className="loading-icon" style={{ fontSize: 40, animation: 'spin 2s linear infinite' }}>☕</div>
+        <p className="loading-text" style={{ marginTop: '1rem', color: 'var(--text-light)', fontFamily: 'Inter, sans-serif' }}>Brewing your experience…</p>
+      </div>
+    );
+  }
+
   if (showLanding) {
     return <AuthLandingPage onLoginSuccess={handleLoginSuccess} />;
   }
@@ -395,11 +422,6 @@ export default function App() {
       stamped={!!stamps[selected.id]}
       onReview={handleReview}
     />
-  ) : loading ? (
-    <div className="loading-screen">
-      <div className="loading-icon" style={{ fontSize: 40 }}>☕</div>
-      <p className="loading-text">Brewing your social feed…</p>
-    </div>
   ) : view === 'feed' ? (
     <FeedView
       posts={posts}
