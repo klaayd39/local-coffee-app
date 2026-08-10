@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapPin, Navigation, ChevronRight, X, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink, LocateFixed } from 'lucide-react';
-import { getDistanceKm, getMinDistanceToRoute } from '../utils/geo';
-
+import { getDistanceKm, getMinDistanceToRoute, fetchIpLocation } from '../utils/geo';
 export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -24,42 +23,19 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   useEffect(() => {
     let watchId;
     if (navigator.geolocation) {
-      const handlePosition = (pos) => {
-        setUserLoc({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          name: "Your Location"
-        });
-      };
-
-      const handleFallback = () => {
-        navigator.geolocation.getCurrentPosition(
-          handlePosition,
-          (err) => console.warn('Desktop fallback geolocation error:', err),
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-        );
-      };
-
-      // Get initial position quickly
-      navigator.geolocation.getCurrentPosition(
-        handlePosition,
-        (err) => {
-          console.warn('Desktop initial high-accuracy geolocation error:', err);
-          handleFallback();
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
-      );
-
       watchId = navigator.geolocation.watchPosition(
-        handlePosition,
+        (pos) => {
+          setUserLoc({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            name: "Your Location"
+          });
+        },
         (err) => {
           console.warn('Desktop Geolocation watch error:', err);
-          if (err.code === 3 || err.code === 2) {
-            handleFallback();
-          }
         },
-        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 }
+        { enableHighAccuracy: true, maximumAge: 10000, timeout: 27000 }
       );
     }
     return () => {
@@ -433,43 +409,59 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
   }, [cafes, selectedId]);
 
   const handleLocateMe = () => {
+    // 1. Instantly provide visual feedback by panning to the current best-known location
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+    }
+    
+    // 2. Try to fetch a newer high-accuracy location silently in the background
     if (navigator.geolocation) {
-      const handlePos = (pos) => {
-        const loc = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          name: "Your Location"
-        };
-        setUserLoc(loc);
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { animate: true, duration: 0.8 });
-        }
-      };
-
       navigator.geolocation.getCurrentPosition(
-        handlePos,
+        (pos) => {
+          const loc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            name: "Your Location"
+          };
+          setUserLoc(loc);
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { animate: true, duration: 0.8 });
+          }
+        },
         (err) => {
-          console.warn('Desktop high-accuracy locate me error, falling back:', err);
+          console.warn('Desktop high accuracy locate failed, trying low accuracy...', err);
           navigator.geolocation.getCurrentPosition(
-            handlePos,
-            (err2) => {
-              console.warn('Desktop fallback locate me error:', err2);
-              alert("Unable to access GPS location. Please check your browser permissions.");
+            (pos2) => {
+              const loc = {
+                lat: pos2.coords.latitude,
+                lng: pos2.coords.longitude,
+                accuracy: pos2.coords.accuracy,
+                name: "Your Location"
+              };
+              setUserLoc(loc);
               if (mapInstanceRef.current) {
-                mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+                mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, { animate: true, duration: 0.8 });
               }
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            (err2) => {
+              console.warn('Desktop locate me explicit error:', err2);
+              // Silent fallback: try IP geolocation if hardware GPS is completely broken
+              fetchIpLocation().then(ipLoc => {
+                if (ipLoc) {
+                  console.log("Found location via IP fallback:", ipLoc);
+                  setUserLoc(ipLoc);
+                  if (mapInstanceRef.current) {
+                    mapInstanceRef.current.flyTo([ipLoc.lat, ipLoc.lng], 16, { animate: true, duration: 0.8 });
+                  }
+                }
+              });
+            },
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
           );
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
-    } else {
-      alert("Geolocation is not supported by your browser.");
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
-      }
     }
   };
 

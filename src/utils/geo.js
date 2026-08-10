@@ -55,3 +55,24 @@ export function getMinDistanceToRoute(userLat, userLng, geometry) {
   }
   return { minDistance, closestIdx };
 }
+
+// Fallback location fetch via IP address when hardware GPS is blocked
+export const fetchIpLocation = async () => {
+  try {
+    const res = await fetch('https://get.geojs.io/v1/ip/geo.json');
+    if (!res.ok) throw new Error("Network response was not ok");
+    const data = await res.json();
+    if (data && data.latitude && data.longitude) {
+      return {
+        lat: parseFloat(data.latitude),
+        lng: parseFloat(data.longitude),
+        accuracy: 5000, // IP locations are roughly city-level
+        name: data.city ? `Your Location (${data.city})` : "Your Location"
+      };
+    }
+    return null;
+  } catch (error) {
+    console.warn("IP Geolocation fallback failed:", error);
+    return null;
+  }
+};

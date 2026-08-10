@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation, X, Search, LocateFixed, ArrowUp, ArrowUpRight, ArrowUpLeft, Flag, Play, Pause, Volume2, VolumeX, ExternalLink } from 'lucide-react';
-import { getDistanceKm, getMinDistanceToRoute } from '../utils/geo';
+import { getDistanceKm, getMinDistanceToRoute, fetchIpLocation } from '../utils/geo';
 
 // Default Location (Malaybalay City Center)
 const DEFAULT_LOCATION = { lat: 8.1575, lng: 125.1248, name: "Malaybalay City Center" };
@@ -61,46 +61,22 @@ export default function MapView({ cafes, onSelect, selectedId }) {
   useEffect(() => {
     let watchId;
     if (navigator.geolocation) {
-      const handlePosition = (pos) => {
-        setUserLoc({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          name: "Your Location"
-        });
-      };
-
-      const handleFallback = () => {
-        navigator.geolocation.getCurrentPosition(
-          handlePosition,
-          (err) => console.warn('Fallback geolocation error:', err),
-          { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-        );
-      };
-
-      // Get initial position quickly
-      navigator.geolocation.getCurrentPosition(
-        handlePosition,
-        (err) => {
-          console.warn('Initial high-accuracy geolocation error:', err);
-          handleFallback();
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
-      );
-
-      // Request high accuracy real-time position updates
       watchId = navigator.geolocation.watchPosition(
-        handlePosition,
+        (pos) => {
+          setUserLoc({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            name: "Your Location"
+          });
+        },
         (err) => {
           console.warn('Geolocation watch error:', err);
-          if (err.code === 3 || err.code === 2) {
-             handleFallback();
-          }
         },
         {
           enableHighAccuracy: true,
-          maximumAge: 1000,
-          timeout: 10000
+          maximumAge: 10000,
+          timeout: 27000
         }
       );
     }
@@ -222,38 +198,51 @@ export default function MapView({ cafes, onSelect, selectedId }) {
 
   const handleLocateMe = () => {
     setMapBounds(null);
-
+    // Instantly pan to best-known location for immediate visual feedback
+    setLocateTrigger(prev => prev + 1);
+    
     if (navigator.geolocation) {
-      const handlePos = (pos) => {
-        const loc = {
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy,
-          name: "Your Location"
-        };
-        setUserLoc(loc);
-        setLocateTrigger(prev => prev + 1);
-      };
-
+      // Fetch a fresh GPS reading silently in the background
       navigator.geolocation.getCurrentPosition(
-        handlePos,
+        (pos) => {
+          const loc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            name: "Your Location"
+          };
+          setUserLoc(loc);
+          setLocateTrigger(prev => prev + 1); // Pan again to the exact updated location
+        },
         (err) => {
-          console.warn('High-accuracy locate me error, falling back:', err);
+          console.warn('High accuracy failed, trying low accuracy...', err);
           navigator.geolocation.getCurrentPosition(
-            handlePos,
-            (err2) => {
-              console.warn('Fallback locate me error:', err2);
-              alert("Unable to access GPS location. Please check your browser permissions.");
+            (pos2) => {
+              const loc = {
+                lat: pos2.coords.latitude,
+                lng: pos2.coords.longitude,
+                accuracy: pos2.coords.accuracy,
+                name: "Your Location"
+              };
+              setUserLoc(loc);
               setLocateTrigger(prev => prev + 1);
             },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+            (err2) => {
+              console.warn('Locate me explicit error:', err2);
+              // Silent fallback: try IP geolocation if hardware GPS is completely broken
+              fetchIpLocation().then(ipLoc => {
+                if (ipLoc) {
+                  console.log("Found location via IP fallback:", ipLoc);
+                  setUserLoc(ipLoc);
+                  setLocateTrigger(prev => prev + 1);
+                }
+              });
+            },
+            { enableHighAccuracy: false, timeout: 5000, maximumAge: 0 }
           );
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
       );
-    } else {
-      alert("Geolocation is not supported by your browser.");
-      setLocateTrigger(prev => prev + 1);
     }
   };
 
