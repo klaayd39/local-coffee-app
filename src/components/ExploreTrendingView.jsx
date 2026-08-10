@@ -9,8 +9,8 @@ const TRENDING_DRINKS = [
 ];
 
 const FEATURED_BEANS = [
-  { id: 'b1', origin: 'Mt. Kitanglad, Bukidnon', notes: 'Dark Chocolate, Nutty', roaster: 'Coffee Wagon Roastery', level: 'Medium-Dark' },
-  { id: 'b2', origin: 'Kalatungan Range', notes: 'Floral, Citrus, Berry', roaster: 'MC2 Reserve', level: 'Light' },
+  { id: 'b1', name: 'Mt. Kitanglad Reserve', origin: 'Mt. Kitanglad, Bukidnon', flavorProfile: ['Dark Chocolate', 'Nutty'], roaster: 'Coffee Wagon Roastery', level: 'Medium-Dark', elevation: '1,500m', price: '₱450/250g' },
+  { id: 'b2', name: 'Kalatungan Peaberry', origin: 'Kalatungan Range', flavorProfile: ['Floral', 'Citrus', 'Berry'], roaster: 'MC2 Reserve', level: 'Light', elevation: '1,700m', price: '₱500/250g' },
 ];
 
 export default function ExploreTrendingView({ cafes, onSelectCafe }) {

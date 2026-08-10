@@ -224,8 +224,7 @@ export default function App() {
         timestamp: new Date(p.created_at).toLocaleDateString(),
         comments: []
       }));
-      // Merge with INITIAL_POSTS so the feed doesn't look empty
-      setPosts([...mapped, ...INITIAL_POSTS]);
+      setPosts(mapped);
     }).catch(err => console.error("Failed to load live posts:", err));
   }, []);
 
@@ -233,13 +232,6 @@ export default function App() {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    fetchCafes().then(data => {
-      setCafes(data);
-      setLoading(false);
-    });
   }, []);
 
   const filtered = useMemo(() => {
