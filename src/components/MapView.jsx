@@ -406,7 +406,10 @@ export default function MapView({ cafes, onSelect, selectedId, showToast }) {
       className: `map-pin ${isSel ? 'active' : ''} ${isDimmed ? 'dimmed' : ''}`,
       html: `
         <div class="map-pin-bubble" style="background: linear-gradient(135deg, ${c.accent}, ${c.accent2});">
-          <span style="font-size: ${isSel ? '16px' : '13px'}; font-style: normal;">${c.emoji}</span>
+          ${c.logo 
+            ? `<img src="${c.logo}" style="width: ${isSel ? '32px' : '24px'}; height: ${isSel ? '32px' : '24px'}; border-radius: 50%; object-fit: cover;" />`
+            : `<span style="font-size: ${isSel ? '16px' : '13px'}; font-style: normal;">${c.emoji}</span>`
+          }
         </div>
         ${isSel ? `<span class="pin-label">${c.name}</span>` : ''}
       `,
@@ -646,7 +649,11 @@ export default function MapView({ cafes, onSelect, selectedId, showToast }) {
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0,
                       boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                     }}>
-                      {activeRoute.cafe.emoji || '☕'}
+                      {activeRoute.cafe.logo ? (
+                        <img src={activeRoute.cafe.logo} alt={activeRoute.cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : (
+                        activeRoute.cafe.emoji || '☕'
+                      )}
                     </div>
                     <div>
                       <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.2 }}>
@@ -763,7 +770,11 @@ export default function MapView({ cafes, onSelect, selectedId, showToast }) {
                   className="nearby-thumb"
                   style={{ background: `linear-gradient(135deg, ${c.accent}33, ${c.accent2}55)` }}
                 >
-                  <span style={{ fontSize: '28px' }}>{c.emoji}</span>
+                  {c.logo ? (
+                    <img src={c.logo} alt={c.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: 'var(--r-md)' }} />
+                  ) : (
+                    <span style={{ fontSize: '28px' }}>{c.emoji}</span>
+                  )}
                 </div>
                 <div className="nearby-info">
                   <div className="nearby-name">{c.name}</div>

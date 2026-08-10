@@ -11,6 +11,7 @@ export const CAFES = [
     accent: "#6366f1", accent2: "#4f46e5",
     rating: 4.8, reviews_count: 120, distance_km: 1.2,
     emoji: "☕",
+    logo: "/logos/the-3rd-street.jpg",
     maps_url: "https://www.google.com/maps/place/THE+3RD+STREET/@8.163291,125.1245981,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffabd54db62347:0x6b0eb4d14e6039ed!8m2!3d8.163291!4d125.127173!16s%2Fg%2F11ygmln8xs",
   },
   {
@@ -21,6 +22,7 @@ export const CAFES = [
     accent: "#8b5cf6", accent2: "#7c3aed",
     rating: 4.7, reviews_count: 95, distance_km: 1.5,
     emoji: "🏔️",
+    logo: "/logos/bukidnon-brew.jpg",
     maps_url: "https://www.google.com/maps/place/Bukidnon+Brew+Cafe/@8.1575707,125.1271253,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffaa298e951451:0x332b841f5a39e6d7!8m2!3d8.1575707!4d125.1297002!16s%2Fg%2F1tdvxfbc",
   },
   {
@@ -31,6 +33,7 @@ export const CAFES = [
     accent: "#d97706", accent2: "#92400e",
     rating: 4.9, reviews_count: 188, distance_km: 0.8,
     emoji: "☕",
+    logo: "/logos/mc2.jpg",
     maps_url: "https://www.google.com/maps/place/Malaybalay+City+Coffee+Pimentel+(MC2)/@8.1596826,125.1236139,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffa954c7eb287f:0x561763566232c17b!8m2!3d8.1596826!4d125.1261888!16s%2Fg%2F11v5cyxkq6",
   },
   {
@@ -61,6 +64,7 @@ export const CAFES = [
     accent: "#f59e0b", accent2: "#d97706",
     rating: 4.7, reviews_count: 120, distance_km: 1.2,
     emoji: "🍰",
+    logo: "/logos/cafe-tamia.jpg",
     maps_url: "https://www.google.com/maps/place/Caf%C3%A9+Tamia+-+Malaybalay/@8.1450184,125.1258496",
   },
   {
@@ -71,6 +75,7 @@ export const CAFES = [
     accent: "#ef4444", accent2: "#b91c1c",
     rating: 4.5, reviews_count: 85, distance_km: 0.8,
     emoji: "🎸",
+    logo: "/logos/st-rocks.jpg",
     maps_url: "https://www.google.com/maps/place/St+Rocks+Coffee+House/@8.1582363,125.1264775",
   },
   {
@@ -81,6 +86,7 @@ export const CAFES = [
     accent: "#8b5cf6", accent2: "#6d28d9",
     rating: 4.8, reviews_count: 210, distance_km: 0.9,
     emoji: "☕",
+    logo: "/logos/bukidnon-brew.jpg",
     maps_url: "https://www.google.com/maps/place/Bukidnon+Brew+Cafe/@8.1575707,125.1297002",
   },
   {

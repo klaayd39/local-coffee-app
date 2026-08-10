@@ -8,8 +8,10 @@ function PassportCard({ cafe, stamped }) {
       <div className="passport-card-top" style={{ background: `linear-gradient(135deg, ${cafe.accent}88, ${cafe.accent2}aa)` }}>
         {stamped ? (
           <span className="passport-stamp-mark" style={{ fontSize: 22 }}>✅</span>
+        ) : cafe.logo ? (
+            <img src={cafe.logo} alt={cafe.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: '50%', opacity: 0.5 }} />
         ) : (
-          <span style={{ fontSize: 22, opacity: 0.3 }}>{cafe.emoji}</span>
+            <span style={{ fontSize: 22, opacity: 0.3 }}>{cafe.emoji}</span>
         )}
       </div>
       <div className="passport-card-name">{cafe.name}</div>

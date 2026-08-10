@@ -8,7 +8,11 @@ function CafeCard({ cafe, onOpen, stamped }) {
       {/* Thumbnail */}
       <div className="cafe-thumb" style={{ background: `linear-gradient(135deg, ${cafe.accent}55, ${cafe.accent2}88)` }}>
         <div className="cafe-thumb-inner">
-          <span style={{ fontSize: 26 }}>{cafe.emoji}</span>
+          {cafe.logo ? (
+            <img src={cafe.logo} alt={cafe.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'var(--r-md)' }} />
+          ) : (
+            <span style={{ fontSize: 26 }}>{cafe.emoji}</span>
+          )}
         </div>
         {stamped && (
           <div className="thumb-stamp" title="Passport stamped">

@@ -169,7 +169,14 @@ export default function CommunityView({ cafes, onOpenCafe, onBack }) {
                     cursor: 'pointer',
                   }}
                 >
-                  {cafe.emoji} {cafe.name}
+                {cafe?.logo ? (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <img src={cafe.logo} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover' }} />
+                    {cafe.name}
+                  </span>
+                ) : (
+                  <span>{cafe?.emoji} {cafe?.name}</span>
+                )}
                 </div>
               )}
               <div className="review-top">

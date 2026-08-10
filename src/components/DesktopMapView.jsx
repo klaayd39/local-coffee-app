@@ -381,7 +381,10 @@ export default function DesktopMapView({ cafes, onSelect, selectedId, showToast 
         className: `map-pin ${isSel ? 'active' : ''}`,
         html: `
           <div class="map-pin-bubble" style="background: linear-gradient(135deg, ${c.accent}, ${c.accent2});">
-            <span style="font-size: ${isSel ? '16px' : '13px'}; font-style: normal;">${c.emoji}</span>
+            ${c.logo 
+              ? `<img src="${c.logo}" style="width: ${isSel ? '32px' : '24px'}; height: ${isSel ? '32px' : '24px'}; border-radius: 50%; object-fit: cover;" />`
+              : `<span style="font-size: ${isSel ? '16px' : '13px'}; font-style: normal;">${c.emoji}</span>`
+            }
           </div>
           ${isSel ? `<span class="pin-label">${c.name}</span>` : ''}
         `,
@@ -702,7 +705,11 @@ export default function DesktopMapView({ cafes, onSelect, selectedId, showToast 
                   className="desktop-cafe-list-thumb"
                   style={{ background: `linear-gradient(135deg, ${c.accent}33, ${c.accent2}55)` }}
                 >
-                  <span style={{ fontSize: 24 }}>{c.emoji}</span>
+                  {c.logo ? (
+                    <img src={c.logo} alt={c.name} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    <span style={{ fontSize: 24 }}>{c.emoji}</span>
+                  )}
                 </div>
                 <div className="desktop-cafe-list-info">
                   <div className="desktop-cafe-list-name">{c.name}</div>
