@@ -453,14 +453,23 @@ export default function DesktopMapView({ cafes, onSelect, selectedId }) {
           console.warn('Desktop high-accuracy locate me error, falling back:', err);
           navigator.geolocation.getCurrentPosition(
             handlePos,
-            (err2) => console.warn('Desktop fallback locate me error:', err2),
+            (err2) => {
+              console.warn('Desktop fallback locate me error:', err2);
+              alert("Unable to access GPS location. Please check your browser permissions.");
+              if (mapInstanceRef.current) {
+                mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+              }
+            },
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
           );
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
       );
-    } else if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+    } else {
+      alert("Geolocation is not supported by your browser.");
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([userLoc.lat, userLoc.lng], 16, { animate: true, duration: 0.8 });
+      }
     }
   };
 

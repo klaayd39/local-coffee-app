@@ -10,23 +10,34 @@ const DEFAULT_LOCATION = { lat: 8.1575, lng: 125.1248, name: "Malaybalay City Ce
 // Component to control map viewport declaratively
 function MapController({ center, zoom, bounds, locateTrigger, selectedLocation, navigationLocation }) {
   const map = useMap();
+  const prevLocate = useRef(locateTrigger);
+  const prevNav = useRef(navigationLocation);
+  const prevSel = useRef(selectedLocation);
+  const prevBounds = useRef(bounds);
+
   useEffect(() => {
-    if (navigationLocation) {
+    if (locateTrigger > prevLocate.current) {
+      map.flyTo(center, zoom || 15, { animate: true, duration: 0.6 });
+    } else if (navigationLocation && navigationLocation !== prevNav.current) {
       map.setView([navigationLocation.lat, navigationLocation.lng], 18, {
         animate: true,
         duration: 0.5
       });
-    } else if (selectedLocation) {
+    } else if (selectedLocation && selectedLocation !== prevSel.current) {
       map.flyTo([selectedLocation.lat, selectedLocation.lng], 16, {
         animate: true,
         duration: 0.8
       });
-    } else if (bounds) {
+    } else if (bounds && bounds !== prevBounds.current) {
       map.fitBounds(bounds, { padding: [60, 60], animate: true, duration: 0.6, easeLinearity: 0.25 });
-    } else if (locateTrigger > 0) {
-      map.flyTo(center, zoom || 15, { animate: true, duration: 0.6 });
     }
+    
+    prevLocate.current = locateTrigger;
+    prevNav.current = navigationLocation;
+    prevSel.current = selectedLocation;
+    prevBounds.current = bounds;
   }, [selectedLocation, bounds, locateTrigger, navigationLocation, map, center, zoom]);
+  
   return null;
 }
 
@@ -230,12 +241,19 @@ export default function MapView({ cafes, onSelect, selectedId }) {
           console.warn('High-accuracy locate me error, falling back:', err);
           navigator.geolocation.getCurrentPosition(
             handlePos,
-            (err2) => console.warn('Fallback locate me error:', err2),
+            (err2) => {
+              console.warn('Fallback locate me error:', err2);
+              alert("Unable to access GPS location. Please check your browser permissions.");
+              setLocateTrigger(prev => prev + 1);
+            },
             { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
           );
         },
         { enableHighAccuracy: true, timeout: 5000, maximumAge: 5000 }
       );
+    } else {
+      alert("Geolocation is not supported by your browser.");
+      setLocateTrigger(prev => prev + 1);
     }
   };
 
