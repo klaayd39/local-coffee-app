@@ -44,6 +44,7 @@ export const CAFES = [
     accent: "#2563eb", accent2: "#1d4ed8",
     rating: 4.8, reviews_count: 156, distance_km: 1.4,
     emoji: "🚐",
+    logo: "/logos/coffee-wagon.jpg",
     maps_url: "https://www.google.com/maps/place/Coffee+Wagon+Cafe+%26+Roastery/@8.1531241,125.1276859,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffab5c130ef765:0xf35be5e362da607b!8m2!3d8.1531241!4d125.1302608!16s%2Fg%2F11v10zgw52",
   },
   {
@@ -54,6 +55,7 @@ export const CAFES = [
     accent: "#10b981", accent2: "#047857",
     rating: 4.8, reviews_count: 94, distance_km: 9.5,
     emoji: "🌿",
+    logo: "/logos/breathe-cafe.jpg",
     maps_url: "https://www.google.com/maps/place/Breathe+caf%C3%A9/@8.2361409,125.174136,994m/data=!3m2!1e3!4b1!4m6!3m5!1s0x32ffadb85ddf162d:0x13e68e0439e39222!8m2!3d8.2361409!4d125.1767109!16s%2Fg%2F11yp_3s2fd?entry=ttu&g_ep=EgoyMDI2MDcxOS4wIKXMDSoASAFQAw%3D%3D",
   },
   {
@@ -97,6 +99,7 @@ export const CAFES = [
     accent: "#0ea5e9", accent2: "#0369a1",
     rating: 4.6, reviews_count: 145, distance_km: 2.8,
     emoji: "🧊",
+    logo: "/logos/cafe-moco.jpg",
     maps_url: "https://www.google.com/maps/place/Cafe+Moco/@8.1399049,125.1072273",
   },
   {
@@ -107,6 +110,7 @@ export const CAFES = [
     accent: "#f43f5e", accent2: "#be123c",
     rating: 4.9, reviews_count: 320, distance_km: 2.5,
     emoji: "🚗",
+    logo: "/logos/driveby-ki.jpg",
     maps_url: "https://www.google.com/maps/place/Driveby+Ki.+Caf%C3%A9/@8.1404903,125.112047",
   },
 ];
